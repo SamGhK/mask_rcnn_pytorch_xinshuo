@@ -5,6 +5,16 @@ import os, coco, torch, numpy as np
 from mylibs import MaskRCNN, display_instances
 from xinshuo_io import load_list_from_folder, fileparts, mkdir_if_missing, load_image, save_image
 from xinshuo_visualization.python.private import save_vis_close_helper
+from xinshuo_miscellaneous import convert_secs2time, Timer
+
+def class_mapping_coco_to_kitti(class_id):
+	if class_id in [1]:
+		return 1		# pedestrian
+	elif class_id in [2]:
+		return 3		# cyclist
+	elif class_id in [3, 4, 6, 7, 8]:
+		return 2		# car
+	else: return 0
 
 class InferenceConfig(coco.CocoConfig):
 	# Set batch size to 1 since we'll be running inference on
@@ -17,11 +27,12 @@ root_dir = os.getcwd()                      # Root directory of the project
 log_dir = os.path.join(root_dir, 'logs')    # Directory to save logs and trained model
 model_path = os.path.join(root_dir, 'mask_rcnn_coco.pth')    # Path to trained weights file
 # images_dir = os.path.join(root_dir, 'images')    # Directory of images to run detection on
-data_dir = '/media/xinshuo/Data/Datasets/KITTI/training'
+data_dir = '/media/xinshuo/Data/Datasets/KITTI/object/training'
 images_dir = os.path.join(data_dir, 'image_2')
-save_dir = os.path.join(data_dir, 'mask_rcnn_seg_results'); mkdir_if_missing(save_dir)
+save_dir = os.path.join(data_dir, 'results'); mkdir_if_missing(save_dir)
 vis_dir = os.path.join(save_dir, 'visualization'); mkdir_if_missing(vis_dir)
 mask_dir = os.path.join(save_dir, 'masks'); mkdir_if_missing(mask_dir)
+detection_result_filepath = os.path.join(save_dir, 'detection_results.txt'); detection_results_file = open(detection_result_filepath, 'w')
 
 config = InferenceConfig()
 config.display()
@@ -55,6 +66,8 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
 # load the data
 image_list, num_list = load_list_from_folder(images_dir)
 print('testing results on %d images' % num_list) 
+count = 1
+timer = Timer(); timer.tic()
 for image_file_tmp in image_list:
 	_, filename, ext = fileparts(image_file_tmp)
 	
@@ -64,18 +77,33 @@ for image_file_tmp in image_list:
 	# visualize and save results
 	r = results[0]			# results from the first image
 	fig, _ = display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
-
-	save_path_tmp = os.path.join(vis_dir, filename+ext)
-	print('saving to %s' % save_path_tmp)
-	save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)
-
-	# save individual mask map
 	num_instances = r['masks'].shape[-1]
+	save_path_tmp = os.path.join(vis_dir, filename+ext)
+	# save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)
+
+	elapsed = timer.toc(average=False)
+	remaining_str = convert_secs2time((elapsed) / count * (num_list - count))
+	elapsed_str = convert_secs2time(elapsed)
+	print('testing %d/%d, detected %d instances, EP: %s, ETA: %s, saving to %s' % (count, num_list, num_instances, elapsed_str, remaining_str, save_path_tmp))
+
+	# save data for each individual instances
 	for instance_index in range(num_instances):
 		mask_tmp = r['masks'][:, :, instance_index]
+		class_tmp = r['class_ids'][instance_index]
+		class_tmp = class_mapping_coco_to_kitti(class_tmp)
+		score_tmp = r['scores'][instance_index]
 		
 		mask_tmp *= 255
 		mask_dir_frame = os.path.join(mask_dir, filename); mkdir_if_missing(mask_dir_frame)
-		save_path_tmp = os.path.join(mask_dir_frame, 'instance_%04d'%instance_index+ext)
+		save_path_tmp = os.path.join(mask_dir_frame, 'instance_%04d'%instance_index+ext)		
+		# save_image(mask_tmp, save_path=save_path_tmp)
 		
-		save_image(mask_tmp, save_path=save_path_tmp)
+		# save info for every instances
+		save_str = '%s %s %s %s\n' % (image_file_tmp, class_tmp, score_tmp, save_path_tmp)
+		detection_results_file.write(save_str)
+		# print(save_str)
+
+
+	count +=1
+
+detection_results_file.close()
