@@ -1,7 +1,7 @@
 # Author: Xinshuo Weng
 # email: xinshuo.weng@gmail.com
 
-import os, coco, torch, numpy as np
+import os, coco, torch, numpy as np, matplotlib.pyplot as plt
 from mylibs import MaskRCNN, display_instances
 from xinshuo_io import load_list_from_folder, fileparts, mkdir_if_missing, load_image, save_image
 from xinshuo_visualization.python.private import save_vis_close_helper
@@ -66,11 +66,11 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
 # load the data
 image_list, num_list = load_list_from_folder(images_dir)
 print('testing results on %d images' % num_list) 
-count = 932
+count = 1
 timer = Timer(); timer.tic()
-for index in range(932, num_list):
-# for image_file_tmp in image_list:
-	image_file_tmp = image_list[index]
+# for index in range(938, num_list):
+for image_file_tmp in image_list:
+	# image_file_tmp = image_list[index]
 	_, filename, ext = fileparts(image_file_tmp)
 	
 	image = load_image(image_file_tmp)
@@ -81,10 +81,10 @@ for index in range(932, num_list):
 
 	# visualize and save results
 	r = results[0]			# results from the first image
-	fig, _ = display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
 	num_instances = r['masks'].shape[-1]
+	fig, _ = display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
 	save_path_tmp = os.path.join(vis_dir, filename+ext)
-	# save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)
+	save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)
 
 	elapsed = timer.toc(average=False)
 	remaining_str = convert_secs2time((elapsed) / count * (num_list - count))
@@ -101,12 +101,11 @@ for index in range(932, num_list):
 		mask_tmp *= 255
 		mask_dir_frame = os.path.join(mask_dir, filename); mkdir_if_missing(mask_dir_frame)
 		save_path_tmp = os.path.join(mask_dir_frame, 'instance_%04d'%instance_index+ext)		
-		# save_image(mask_tmp, save_path=save_path_tmp)
+		save_image(mask_tmp, save_path=save_path_tmp)
 		
 		# save info for every instances
 		save_str = '%s %s %s %s\n' % (image_file_tmp, class_tmp, score_tmp, save_path_tmp)
 		detection_results_file.write(save_str)
-		# print(save_str)
 
 	count +=1
 
