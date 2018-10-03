@@ -66,13 +66,18 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
 # load the data
 image_list, num_list = load_list_from_folder(images_dir)
 print('testing results on %d images' % num_list) 
-count = 1
+count = 932
 timer = Timer(); timer.tic()
-for image_file_tmp in image_list:
+for index in range(932, num_list):
+# for image_file_tmp in image_list:
+	image_file_tmp = image_list[index]
 	_, filename, ext = fileparts(image_file_tmp)
 	
 	image = load_image(image_file_tmp)
 	results = model.detect([image])		# inference, results is a dictionary
+	if len(results) == 0: 
+		count += 1
+		continue
 
 	# visualize and save results
 	r = results[0]			# results from the first image
@@ -102,7 +107,6 @@ for image_file_tmp in image_list:
 		save_str = '%s %s %s %s\n' % (image_file_tmp, class_tmp, score_tmp, save_path_tmp)
 		detection_results_file.write(save_str)
 		# print(save_str)
-
 
 	count +=1
 

@@ -390,39 +390,54 @@ def refine_detections(rois, probs, deltas, window, config):
 
     # TODO: Filter out boxes with zero area
     keep_bool = class_ids>0				# Filter out background boxes
+    # print(keep_bool)
 
     # Filter out low confidence boxes
     if config.DETECTION_MIN_CONFIDENCE: keep_bool = keep_bool & (class_scores >= config.DETECTION_MIN_CONFIDENCE)
-    keep = torch.nonzero(keep_bool)[:,0]
+    # print(keep_bool)
+    # print(torch.nonzero(keep_bool))
 
-    # Apply per-class NMS
-    pre_nms_class_ids = class_ids[keep.data]
-    pre_nms_scores = class_scores[keep.data]
-    pre_nms_rois = refined_rois[keep.data]
-    for i, class_id in enumerate(unique1d(pre_nms_class_ids)):
-        ixs = torch.nonzero(pre_nms_class_ids == class_id)[:,0]			# Pick detections of this class
+    if torch.nonzero(keep_bool).size()[0]:
+        keep = torch.nonzero(keep_bool)[:, 0] 
 
-        # Sort
-        ix_rois = pre_nms_rois[ixs.data]
-        ix_scores = pre_nms_scores[ixs]
-        ix_scores, order = ix_scores.sort(descending=True)
-        ix_rois = ix_rois[order.data,:]
+        # Apply per-class NMS
+        pre_nms_class_ids = class_ids[keep.data]
+        pre_nms_scores = class_scores[keep.data]
+        pre_nms_rois = refined_rois[keep.data]
+        for i, class_id in enumerate(unique1d(pre_nms_class_ids)):
+            ixs = torch.nonzero(pre_nms_class_ids == class_id)[:,0]         # Pick detections of this class
 
-        class_keep = nms(torch.cat((ix_rois, ix_scores.unsqueeze(1)), dim=1).data, config.DETECTION_NMS_THRESHOLD)
-        class_keep = keep[ixs[order[class_keep].data].data]		# Map indicies
-        if i==0: nms_keep = class_keep
-        else: nms_keep = unique1d(torch.cat((nms_keep, class_keep)))
+            # Sort
+            ix_rois = pre_nms_rois[ixs.data]
+            ix_scores = pre_nms_scores[ixs]
+            ix_scores, order = ix_scores.sort(descending=True)
+            ix_rois = ix_rois[order.data,:]
 
-    keep = intersect1d(keep, nms_keep)
+            class_keep = nms(torch.cat((ix_rois, ix_scores.unsqueeze(1)), dim=1).data, config.DETECTION_NMS_THRESHOLD)
+            class_keep = keep[ixs[order[class_keep].data].data]     # Map indicies
+            if i==0: nms_keep = class_keep
+            else: nms_keep = unique1d(torch.cat((nms_keep, class_keep)))
 
-    # Keep top detections
-    roi_count = config.DETECTION_MAX_INSTANCES
-    top_ids = class_scores[keep.data].sort(descending=True)[1][:roi_count]
-    keep = keep[top_ids.data]
+        keep = intersect1d(keep, nms_keep)
+
+        # Keep top detections
+        roi_count = config.DETECTION_MAX_INSTANCES
+        top_ids = class_scores[keep.data].sort(descending=True)[1][:roi_count]
+        keep = keep[top_ids.data]
+
+        result = torch.cat((refined_rois[keep.data], class_ids[keep.data].unsqueeze(1).float(), class_scores[keep.data].unsqueeze(1)), dim=1)
+    else:
+        keep = torch.nonzero(keep_bool)
+        result = keep.clone()
+    # print(keep)
+
+    # print(class_ids[keep.data])
+    # class_ids[keep.data].unsqueeze(1).float()
 
     # Arrange output as [N, (y1, x1, y2, x2, class_id, score)]
     # Coordinates are in image domain.
-    result = torch.cat((refined_rois[keep.data], class_ids[keep.data].unsqueeze(1).float(), class_scores[keep.data].unsqueeze(1)), dim=1)
+    # result = torch.cat((refined_rois[keep.data], class_ids[keep.data].unsqueeze(1).float(), class_scores[keep.data].unsqueeze(1)), dim=1)
+    # print(result)
     return result
 
 def detection_layer(config, rois, mrcnn_class, mrcnn_bbox, image_meta):
@@ -599,15 +614,19 @@ class MaskRCNN(nn.Module):
         if self.config.GPU_COUNT: molded_images = molded_images.cuda()
         molded_images = Variable(molded_images, volatile=True)      # Wrap in variable
         detections, mrcnn_mask = self.predict([molded_images, image_metas], mode='inference')       # Run object detection
-        detections = detections.data.cpu().numpy()      # Convert to numpy
-        mrcnn_mask = mrcnn_mask.permute(0, 1, 3, 4, 2).data.cpu().numpy()
+        
+        if detections.size()[0]:
+            detections = detections.data.cpu().numpy()      # Convert to numpy
+            mrcnn_mask = mrcnn_mask.permute(0, 1, 3, 4, 2).data.cpu().numpy()
 
-        # Process detections
-        results = []
-        for i, image in enumerate(images):
-            final_rois, final_class_ids, final_scores, final_masks = self.unmold_detections(detections[i], mrcnn_mask[i], image.shape, windows[i])
-            results.append({"rois": final_rois, "class_ids": final_class_ids, "scores": final_scores, "masks": final_masks})
-        return results
+            # Process detections
+            results = []
+            for i, image in enumerate(images):
+                final_rois, final_class_ids, final_scores, final_masks = self.unmold_detections(detections[i], mrcnn_mask[i], image.shape, windows[i])
+                results.append({"rois": final_rois, "class_ids": final_class_ids, "scores": final_scores, "masks": final_masks})
+            return results
+        else:
+            return []
 
     def predict(self, input, mode):
         molded_images, image_metas = input[0], input[1]
@@ -649,22 +668,23 @@ class MaskRCNN(nn.Module):
             # Network Heads
             mrcnn_class_logits, mrcnn_class, mrcnn_bbox = self.classifier(mrcnn_feature_maps, rpn_rois)     # Proposal classifier and BBox regressor heads
             detections = detection_layer(self.config, rpn_rois, mrcnn_class, mrcnn_bbox, image_metas)       # Detections, output is [batch, num_detections, (y1, x1, y2, x2, class_id, score)] in image coordinates
+            if detections.size()[0]:
+                # Convert boxes to normalized coordinates
+                # TODO: let DetectionLayer return normalized coordinates to avoid
+                #       unnecessary conversions
+                h, w = self.config.IMAGE_SHAPE[:2]
+                scale = Variable(torch.from_numpy(np.array([h, w, h, w])).float(), requires_grad=False)
+                if self.config.GPU_COUNT: scale = scale.cuda()
+                detection_boxes = detections[:, :4] / scale
+                detection_boxes = detection_boxes.unsqueeze(0)  # Add back batch dimension
+                mrcnn_mask = self.mask(mrcnn_feature_maps, detection_boxes)     # Create masks for detections
 
-            # Convert boxes to normalized coordinates
-            # TODO: let DetectionLayer return normalized coordinates to avoid
-            #       unnecessary conversions
-            h, w = self.config.IMAGE_SHAPE[:2]
-            scale = Variable(torch.from_numpy(np.array([h, w, h, w])).float(), requires_grad=False)
-            if self.config.GPU_COUNT: scale = scale.cuda()
-            detection_boxes = detections[:, :4] / scale
-            detection_boxes = detection_boxes.unsqueeze(0)  # Add back batch dimension
-            mrcnn_mask = self.mask(mrcnn_feature_maps, detection_boxes)     # Create masks for detections
-
-            # Add back batch dimension
-            detections = detections.unsqueeze(0)
-            mrcnn_mask = mrcnn_mask.unsqueeze(0)
+                # Add back batch dimension
+                detections = detections.unsqueeze(0)
+                mrcnn_mask = mrcnn_mask.unsqueeze(0)
+            else:
+                mrcnn_mask = detections.clone()
             return [detections, mrcnn_mask]
-
         elif mode == 'training':
             gt_class_ids, gt_boxes, gt_masks = input[2], input[3], input[4]
 
