@@ -2,6 +2,7 @@
 # email: xinshuo.weng@gmail.com
 
 import os, coco, torch, numpy as np, matplotlib.pyplot as plt
+if "DISPLAY" not in os.environ: plt.switch_backend('agg')
 from mylibs import MaskRCNN, display_instances
 from xinshuo_io import load_list_from_folder, fileparts, mkdir_if_missing, load_image, save_image
 from xinshuo_visualization.python.private import save_vis_close_helper
@@ -10,9 +11,9 @@ from xinshuo_miscellaneous import convert_secs2time, Timer
 def class_mapping_coco_to_kitti(class_id):
 	if class_id in [1]:
 		return 1		# pedestrian
-	elif class_id in [2]:
-		return 3		# cyclist
-	elif class_id in [3, 4, 6, 7, 8]:
+	# elif class_id in [2]:
+		# return 3		# cyclist
+	elif class_id in [3]:
 		return 2		# car
 	else: return 0
 
@@ -29,10 +30,10 @@ model_path = os.path.join(root_dir, 'mask_rcnn_coco.pth')    # Path to trained w
 # images_dir = os.path.join(root_dir, 'images')    # Directory of images to run detection on
 data_dir = '/media/xinshuo/Data/Datasets/KITTI/object/training'
 images_dir = os.path.join(data_dir, 'image_2')
-save_dir = os.path.join(data_dir, 'results'); mkdir_if_missing(save_dir)
+save_dir = os.path.join(data_dir, 'results/mask_preprocessed'); mkdir_if_missing(save_dir)
 vis_dir = os.path.join(save_dir, 'visualization'); mkdir_if_missing(vis_dir)
 mask_dir = os.path.join(save_dir, 'masks'); mkdir_if_missing(mask_dir)
-detection_result_filepath = os.path.join(save_dir, 'detection_results.txt'); detection_results_file = open(detection_result_filepath, 'w')
+detection_result_filepath = os.path.join(save_dir, 'mask_results.txt'); detection_results_file = open(detection_result_filepath, 'w')
 
 config = InferenceConfig()
 config.display()
@@ -71,7 +72,7 @@ timer = Timer(); timer.tic()
 # for index in range(938, num_list):
 for image_file_tmp in image_list:
 	# image_file_tmp = image_list[index]
-	_, filename, ext = fileparts(image_file_tmp)
+	_, filename, _ = fileparts(image_file_tmp)
 	
 	image = load_image(image_file_tmp)
 	results = model.detect([image])		# inference, results is a dictionary
@@ -83,7 +84,7 @@ for image_file_tmp in image_list:
 	r = results[0]			# results from the first image
 	num_instances = r['masks'].shape[-1]
 	fig, _ = display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
-	save_path_tmp = os.path.join(vis_dir, filename+ext)
+	save_path_tmp = os.path.join(vis_dir, filename+'.jpg')
 	save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)
 
 	elapsed = timer.toc(average=False)
@@ -100,7 +101,7 @@ for image_file_tmp in image_list:
 		
 		mask_tmp *= 255
 		mask_dir_frame = os.path.join(mask_dir, filename); mkdir_if_missing(mask_dir_frame)
-		save_path_tmp = os.path.join(mask_dir_frame, 'instance_%04d'%instance_index+ext)		
+		save_path_tmp = os.path.join(mask_dir_frame, 'instance_%04d'%instance_index+'.jpg')		
 		save_image(mask_tmp, save_path=save_path_tmp)
 		
 		# save info for every instances

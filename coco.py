@@ -21,7 +21,9 @@ from xinshuo_miscellaneous import is_path_exists
 
 ROOT_DIR = os.getcwd()      # Root directory of the project
 COCO_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.pth")      # Path to trained weights file
-DEFAULT_LOGS_DIR = os.path.join(ROOT_DIR, "logs")       # Directory to save logs and model checkpoints, if not provided
+
+save_dir = '/media/xinshuo/Data/models/mask_rcnn_pytorch'
+DEFAULT_LOGS_DIR = os.path.join(save_dir, "logs")       # Directory to save logs and model checkpoints, if not provided
 DEFAULT_DATASET_YEAR = "2014"
 
 ############################################################
