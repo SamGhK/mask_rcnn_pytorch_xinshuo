@@ -16,7 +16,7 @@ from .visualize import plot_loss
 from .general_utils import log, printProgressBar, generate_pyramid_anchors, resize_image, mold_image, compose_image_meta, parse_image_meta, unmold_mask
 from .pytorch_myutils import unique1d, intersect1d
 
-from xinshuo_miscellaneous import is_path_exists
+from xinshuo_miscellaneous import is_path_exists, islist
 from xinshuo_io import mkdir_if_missing
 
 ############################################################
@@ -458,7 +458,6 @@ def detection_layer(config, rois, mrcnn_class, mrcnn_bbox, image_meta):
 ############################################################
 #  MaskRCNN Class
 ############################################################
-
 class MaskRCNN(nn.Module):
     def __init__(self, config, model_dir):
         """
@@ -680,8 +679,7 @@ class MaskRCNN(nn.Module):
                 # Add back batch dimension
                 detections = detections.unsqueeze(0)
                 mrcnn_mask = mrcnn_mask.unsqueeze(0)
-            else:
-                mrcnn_mask = detections.clone()
+            else: mrcnn_mask = detections.clone()
             return [detections, mrcnn_mask]
         elif mode == 'training':
             gt_class_ids, gt_boxes, gt_masks = input[2], input[3], input[4]
@@ -706,11 +704,11 @@ class MaskRCNN(nn.Module):
 
             return [rpn_class_logits, rpn_bbox_refine, target_class_ids, mrcnn_class_logits, target_deltas, mrcnn_bbox, target_mask, mrcnn_mask]
 
-    def train_model(self, train_dataset, val_dataset, learning_rate, epochs, layers):
+    def train_model(self, train_dataset, val_dataset, learning_rate, num_epochs, layers):
         """Train the model.
         train_dataset, val_dataset: Training and validation Dataset objects.
         learning_rate: The learning rate to train with
-        epochs: Number of training epochs. Note that previous training epochs
+        num_epochs: Number of training epochs. Note that previous training epochs
                 are considered to be done alreay, so this actually determines
                 the epochs to train in total rather than in this particaular
                 call.
@@ -754,8 +752,8 @@ class MaskRCNN(nn.Module):
         optimizer = optim.SGD([{'params': trainables_wo_bn, 'weight_decay': self.config.WEIGHT_DECAY}, {'params': trainables_only_bn}], lr=learning_rate, momentum=self.config.LEARNING_MOMENTUM)
         
         # train
-        for epoch in range(self.epoch + 1, epochs + 1):
-            log("Epoch {}/{}.".format(epoch, epochs), log=self.log_file)
+        for epoch in range(self.epoch + 1, num_epochs + 1):
+            log('Epoch {}/{}.'.format(epoch, num_epochs), log=self.log_file)
 
             loss, loss_rpn_class, loss_rpn_bbox, loss_mrcnn_class, loss_mrcnn_bbox, loss_mrcnn_mask = self.train_epoch(train_generator, optimizer, self.config.STEPS_PER_EPOCH)     # Training
             val_loss, val_loss_rpn_class, val_loss_rpn_bbox, val_loss_mrcnn_class, val_loss_mrcnn_bbox, val_loss_mrcnn_mask = self.valid_epoch(val_generator, self.config.VALIDATION_STEPS)     # Validation
@@ -764,17 +762,22 @@ class MaskRCNN(nn.Module):
             self.loss_history.append([loss, loss_rpn_class, loss_rpn_bbox, loss_mrcnn_class, loss_mrcnn_bbox, loss_mrcnn_mask])
             self.val_loss_history.append([val_loss, val_loss_rpn_class, val_loss_rpn_bbox, val_loss_mrcnn_class, val_loss_mrcnn_bbox, val_loss_mrcnn_mask])
             plot_loss(self.loss_history, self.val_loss_history, save=True, log_dir=self.log_dir)
-
             torch.save(self.state_dict(), self.checkpoint_path.format(epoch))		# Save model
 
-        self.epoch = epochs
+        self.epoch = num_epochs
 
     def train_epoch(self, datagenerator, optimizer, num_steps):
         batch_count = 0
         loss_sum, loss_rpn_class_sum, loss_rpn_bbox_sum, loss_mrcnn_class_sum, loss_mrcnn_bbox_sum, loss_mrcnn_mask_sum = 0, 0, 0, 0, 0, 0
         step = 0
         optimizer.zero_grad()
+        # print('I am here')
         for images, image_metas, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks in datagenerator:
+            # print(batch_count)
+            # print(gt_class_ids)
+            # print(type(gt_class_ids))
+            if islist(gt_class_ids): continue           # TODO, why this happen
+
             batch_count += 1
             image_metas = image_metas.numpy()       # image_metas as numpy array
             images, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks = Variable(images), Variable(rpn_match), Variable(rpn_bbox), Variable(gt_class_ids), Variable(gt_boxes), Variable(gt_masks)
@@ -783,6 +786,17 @@ class MaskRCNN(nn.Module):
             # Run object detection
             rpn_class_logits, rpn_pred_bbox, target_class_ids, mrcnn_class_logits, target_deltas, mrcnn_bbox, target_mask, mrcnn_mask = \
                 self.predict([images, image_metas, gt_class_ids, gt_boxes, gt_masks], mode='training')
+
+            # print(target_class_ids.size())
+            # print(rpn_class_logits.size())
+            # print(rpn_pred_bbox.size())
+            # print(mrcnn_class_logits.size())
+            # print(target_deltas.size())
+            # print(mrcnn_bbox.size())
+            # print(target_mask.size())
+            # print(mrcnn_mask.size())
+
+            # print(target_class_ids)
 
             # Compute losses
             rpn_class_loss, rpn_bbox_loss, mrcnn_class_loss, mrcnn_bbox_loss, mrcnn_mask_loss = \

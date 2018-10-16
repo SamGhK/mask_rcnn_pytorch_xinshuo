@@ -74,9 +74,9 @@ def compute_mrcnn_bbox_loss(target_bbox, target_class_ids, pred_bbox):
     pred_bbox: [batch, num_rois, num_classes, (dy, dx, log(dh), log(dw))]
     """
 
-    if target_class_ids.size()[0]:
-        # Only positive ROIs contribute to the loss. And only
-        # the right class_id of each ROI. Get their indicies.
+    if target_class_ids.size()[0]:          # Only positive ROIs contribute to the loss. And only the right class_id of each ROI. Get their indicies.
+        # print(target_class_ids)
+
         positive_roi_ix = torch.nonzero(target_class_ids > 0)[:, 0]
         positive_roi_class_ids = target_class_ids[positive_roi_ix.data].long()
         indices = torch.stack((positive_roi_ix,positive_roi_class_ids), dim=1)

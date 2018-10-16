@@ -66,20 +66,17 @@ class General_Dataset(object):
         self.class_names = [clean_name(c["name"]) for c in self.class_info]
         self.num_images = len(self.image_info)
         self._image_ids = np.arange(self.num_images)
-
         self.class_from_source_map = {"{}.{}".format(info['source'], info['id']): id
                                       for info, id in zip(self.class_info, self.class_ids)}
 
         # Map sources to class_ids they support
+        # TODO, how does it map
         self.sources = list(set([i['source'] for i in self.class_info]))
         self.source_class_ids = {}
-        # Loop over datasets
-        for source in self.sources:
+        for source in self.sources:                 # Loop over datasets
             self.source_class_ids[source] = []
-            # Find classes that belong to this dataset
-            for i, info in enumerate(self.class_info):
-                # Include BG class in all datasets
-                if i == 0 or source == info['source']:
+            for i, info in enumerate(self.class_info):          # Find classes that belong to this dataset
+                if i == 0 or source == info['source']:          # Include BG class in all datasets
                     self.source_class_ids[source].append(i)
 
     def map_source_class_id(self, source_class_id):

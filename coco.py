@@ -38,36 +38,22 @@ class CocoDataset(General_Dataset):
         auto_download: Automatically download and unzip MS-COCO images and annotations
         """
         if auto_download is True: self.auto_download(dataset_dir, subset, year)
-        coco = COCO('{}/annotations/instances_{}{}.json'.format(dataset_dir, subset, year))
         if subset == 'minival' or subset == 'valminusminival': subset = 'val'
+        coco = COCO('{}/annotations/instances_{}{}.json'.format(dataset_dir, subset, year))
         image_dir = os.path.join(dataset_dir, '{}{}'.format(subset, year))        
-
-        # Load all classes or a subset?
-        if not class_ids: class_ids = sorted(coco.getCatIds())        # All classes
-        # print(class_ids)
-        # print(len(class_ids))
-        # zxc
-
-        print(type(coco.getImgIds(catIds=[1])))
-        zxc
-        # print(len(set(coco.getImgIds(catIds=[1]))))
 
         # All images or a subset containing the requested ID. Duplicated images are removed
         if class_ids:
             image_ids = []
             for id in class_ids: image_ids.extend(list(coco.getImgIds(catIds=[id])))
             image_ids = list(set(image_ids))        # Remove duplicates
-        else: image_ids = list(coco.imgs.keys())  # All images
-
+        else: 
+            image_ids = list(coco.imgs.keys())  # All images
+            class_ids = sorted(coco.getCatIds())        # All classes
 
         # add all images and classes into the dataset
         for i in class_ids: self.add_class('coco', i, coco.loadCats(i)[0]['name'])          # Add classes
         for i in image_ids:             # Add images
-            # print(coco.getAnnIds(imgIds=[i], catIds=class_ids, iscrowd=None))
-            # print(coco.loadAnns(coco.getAnnIds(imgIds=[i], catIds=class_ids, iscrowd=None))[0])
-            # print(i)
-            # zxc
-
             self.add_image('coco', image_id=i, path=os.path.join(image_dir, coco.imgs[i]['file_name']), width=coco.imgs[i]['width'], 
                 height=coco.imgs[i]['height'], annotations=coco.loadAnns(coco.getAnnIds(imgIds=[i], catIds=class_ids, iscrowd=None)))
 
@@ -81,7 +67,7 @@ class CocoDataset(General_Dataset):
         in the form of a bitmap [height, width, instances].
 
         Returns:
-        masks: A bool array of shape [height, width, instance count] with
+        masks: A uint8 array of shape [height, width, instance count] with
             one mask per instance.
         class_ids: a 1D array of class IDs of the instance masks.
         """
@@ -108,14 +94,20 @@ class CocoDataset(General_Dataset):
                     # For crowd masks, annToMask() sometimes returns a mask
                     # smaller than the given dimensions. If so, resize it.
                     if m.shape[0] != image_info["height"] or m.shape[1] != image_info["width"]:
-                        m = np.ones([image_info["height"], image_info["width"]], dtype=bool)
+                        m = np.ones([image_info["height"], image_info["width"]], dtype='uint8')
                 instance_masks.append(m)
                 class_ids.append(class_id)
+                # print(np.max(m))
+                # print(m.dtype)
+                # zxc
 
         # Pack instance masks into an array
         if class_ids:
             mask = np.stack(instance_masks, axis=2)
             class_ids = np.array(class_ids, dtype=np.int32)
+            # print(mask.dtype)
+            # zxc
+
             return mask, class_ids
         else: return super(CocoDataset, self).load_mask(image_id)     # Call super class to return an empty mask
 
@@ -263,7 +255,11 @@ def evaluate_coco(model, dataset, coco, eval_type="bbox", limit=0, image_ids=Non
 
         # Run detection
         t = time.time()
-        r = model.detect([image])[0]
+        r = model.detect([image])
+        if len(r) > 0: r = r[0]
+        else: continue                  # TODO, not sure how to handle without results
+
+        # zxc
         t_prediction += (time.time() - t)
 
         # Convert results to COCO format

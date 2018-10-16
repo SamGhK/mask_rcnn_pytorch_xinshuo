@@ -26,7 +26,10 @@ def load_image_gt(dataset, config, image_id, augment=False, use_mini_mask=False)
     # Load image and mask
     image = dataset.load_image(image_id)
     mask, class_ids = dataset.load_mask(image_id)
-    shape = image.shape
+    # print(mask.shape)
+
+    # TODO, check what happened here
+    # assert len(mask.shape) == 3 and mask.shape[0] == image.shape[0] and mask.shape[1] == image.shape[1], 'the input mask shape is not correct'
     image, window, scale, padding = resize_image(image, min_dim=config.IMAGE_MIN_DIM, max_dim=config.IMAGE_MAX_DIM, padding=config.IMAGE_PADDING)
     mask = resize_mask(mask, scale, padding)
 
@@ -43,11 +46,11 @@ def load_image_gt(dataset, config, image_id, augment=False, use_mini_mask=False)
     # Active classes
     # Different datasets have different classes, so track the classes supported in the dataset of this image.
     active_class_ids = np.zeros([dataset.num_classes], dtype=np.int32)
-    source_class_ids = dataset.source_class_ids[dataset.image_info[image_id]["source"]]
+    source_class_ids = dataset.source_class_ids[dataset.image_info[image_id]['source']]
     active_class_ids[source_class_ids] = 1
 
     if use_mini_mask: mask = minimize_mask(bbox, mask, config.MINI_MASK_SHAPE)          # Resize masks to smaller size to reduce memory usage
-    image_meta = compose_image_meta(image_id, shape, window, active_class_ids)          # Image meta data
+    image_meta = compose_image_meta(image_id, image.shape, window, active_class_ids)          # Image meta data
     return image, image_meta, class_ids, bbox, mask
 
 def build_rpn_targets(image_shape, anchors, gt_class_ids, gt_boxes, config):
@@ -81,9 +84,7 @@ def build_rpn_targets(image_shape, anchors, gt_class_ids, gt_boxes, config):
         crowd_overlaps = compute_overlaps(anchors, crowd_boxes)
         crowd_iou_max = np.amax(crowd_overlaps, axis=1)
         no_crowd_bool = (crowd_iou_max < 0.001)
-    else:
-        no_crowd_bool = np.ones([anchors.shape[0]], dtype=bool)         # All anchors don't intersect a crowd
-
+    else: no_crowd_bool = np.ones([anchors.shape[0]], dtype=bool)         # All anchors don't intersect a crowd
     overlaps = compute_overlaps(anchors, gt_boxes)          # Compute overlaps [num_anchors, num_gt_boxes]
 
     # Match anchors to GT Boxes
@@ -104,16 +105,14 @@ def build_rpn_targets(image_shape, anchors, gt_class_ids, gt_boxes, config):
     # Subsample to balance positive and negative anchors. Don't let positives be more than half the anchors
     ids = np.where(rpn_match == 1)[0]
     extra = len(ids) - (config.RPN_TRAIN_ANCHORS_PER_IMAGE // 2)
-    if extra > 0:
-        # Reset the extra ones to neutral
+    if extra > 0:       # Reset the extra ones to neutral
         ids = np.random.choice(ids, extra, replace=False)
         rpn_match[ids] = 0
 
     # Same for negative proposals
     ids = np.where(rpn_match == -1)[0]
     extra = len(ids) - (config.RPN_TRAIN_ANCHORS_PER_IMAGE - np.sum(rpn_match == 1))
-    if extra > 0:
-        # Rest the extra ones to neutral
+    if extra > 0:           # Rest the extra ones to neutral
         ids = np.random.choice(ids, extra, replace=False)
         rpn_match[ids] = 0
 
@@ -122,14 +121,14 @@ def build_rpn_targets(image_shape, anchors, gt_class_ids, gt_boxes, config):
     ix = 0  # index into rpn_bbox
     # TODO: use box_refinment() rather than duplicating the code here
     for i, a in zip(ids, anchors[ids]):
-        # Closest gt box (it might have IoU < 0.7)
-        gt = gt_boxes[anchor_iou_argmax[i]]
+        gt = gt_boxes[anchor_iou_argmax[i]]         # Closest gt box (it might have IoU < 0.7)
 
         # Convert coordinates to center plus width/height. GT Box
         gt_h = gt[2] - gt[0]
         gt_w = gt[3] - gt[1]
         gt_center_y = gt[0] + 0.5 * gt_h
         gt_center_x = gt[1] + 0.5 * gt_w
+        
         # Anchor
         a_h = a[2] - a[0]
         a_w = a[3] - a[1]
@@ -174,7 +173,7 @@ class Mask_RCNN_Dataset(torch.utils.data.Dataset):
             """
         self.b = 0                      # batch item index
         self.image_index = -1
-        self.image_ids = np.copy(dataset.image_ids)     # a list of image id, length is number of data
+        self.image_ids = np.array(dataset.image_ids)     # a list of image id, length is number of data
         self.error_count = 0
         self.dataset = dataset
         self.config = config
@@ -189,7 +188,7 @@ class Mask_RCNN_Dataset(torch.utils.data.Dataset):
         # Skip images that have no instances. This can happen in cases
         # where we train on a subset of classes and the image doesn't
         # have any of the classes we care about.
-        if not np.any(gt_class_ids > 0): return None
+        if not np.any(gt_class_ids > 0): return [], [], [], [], [], [], []
         rpn_match, rpn_bbox = build_rpn_targets(image.shape, self.anchors_, gt_class_ids, gt_boxes, self.config)     # find the matches for every anchor and the deltas
 
         # If more instances than fits in the array, sub-sample from them.

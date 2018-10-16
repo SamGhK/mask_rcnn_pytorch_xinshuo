@@ -26,22 +26,31 @@ class InferenceConfig(coco.CocoConfig):
 
 root_dir = os.getcwd()                      # Root directory of the project
 log_dir = os.path.join(root_dir, 'logs')    # Directory to save logs and trained model
+
+
+# model_path = os.path.join(root_dir, 'resnet50_imagenet.pth')    # Path to trained weights file
 model_path = os.path.join(root_dir, 'mask_rcnn_coco.pth')    # Path to trained weights file
-# images_dir = os.path.join(root_dir, 'images')    # Directory of images to run detection on
-data_dir = '/media/xinshuo/Data/Datasets/KITTI/object/training'
-images_dir = os.path.join(data_dir, 'image_2')
-save_dir = os.path.join(data_dir, 'results/mask_preprocessed'); mkdir_if_missing(save_dir)
+# model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/coco20181015T1656/mask_rcnn_coco_0160.pth'
+# model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/coco20181015T1653/mask_rcnn_coco_0160.pth'
+
+images_dir = os.path.join(root_dir, 'images')    # Directory of images to run detection on
+save_dir = os.path.join(root_dir, 'tmp/results'); mkdir_if_missing(save_dir)
+
+# data_dir = '/media/xinshuo/Data/Datasets/KITTI/object/training'
+# images_dir = os.path.join(data_dir, 'image_2')
+# save_dir = os.path.join(data_dir, 'results/mask_preprocessed'); mkdir_if_missing(save_dir)
+
 vis_dir = os.path.join(save_dir, 'visualization'); mkdir_if_missing(vis_dir)
 mask_dir = os.path.join(save_dir, 'masks'); mkdir_if_missing(mask_dir)
 detection_result_filepath = os.path.join(save_dir, 'mask_results.txt'); detection_results_file = open(detection_result_filepath, 'w')
 
 config = InferenceConfig()
-config.display()
+# config.display()
 
 # Create model object.
 model = MaskRCNN(model_dir=log_dir, config=config)
 if config.GPU_COUNT: model = model.cuda()
-model.load_state_dict(torch.load(model_path))    # Load weights trained on MS-COCO
+model.load_weights(model_path)    # Load weights trained on MS-COCO
 
 # COCO Class names
 # Index of the class in the list is its ID. For example, to get ID of
@@ -78,6 +87,7 @@ for image_file_tmp in image_list:
 	results = model.detect([image])		# inference, results is a dictionary
 	if len(results) == 0: 
 		count += 1
+		print('testing %d/%d, no detected results' % (count, num_list))
 		continue
 
 	# visualize and save results

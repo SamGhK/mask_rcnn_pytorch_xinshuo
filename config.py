@@ -158,8 +158,8 @@ class Config(object):
 
     def display(self, log_file):
         """Display Configuration values."""
-        print_log('\nConfigurations:', log_file)
+        print_log('\nConfigurations:', log=log_file)
         for a in dir(self):
             if not a.startswith("__") and not callable(getattr(self, a)):
                 print_log('{:30} {}'.format(a, getattr(self, a)), log_file)
-        print('\n', log_file)
+        print_log('\n', log=log_file)

@@ -3,10 +3,10 @@
 
 # CityScape dataset loader
 
-import os, time, numpy as np
-from cityscapesscripts.helpers.labels import id2label, labels, name2label
+import os, time, numpy as np, copy
+# from cityscapesscripts.helpers.labels import , labels, name2label
 from cityscapesscripts.helpers.annotation import Annotation
-from mylibs import General_Dataset
+from mylibs import General_Dataset, id2label, name2label
 from config import Config
 from xinshuo_io import mkdir_if_missing, fileparts, load_list_from_folder
 from xinshuo_miscellaneous import is_path_exists, islist, find_unique_common_from_lists
@@ -17,7 +17,7 @@ except:
     print("Failed to import the image processing packages.")
     sys.exit(-1)
 
-ignore_id_list = [0, 1, 2, 3, 4]
+# ignore_id_list = [0, 1, 2, 3, 4, -1]
 
 ############################################################
 #  Configurations
@@ -27,7 +27,7 @@ class CityscapeConfig(Config):
     """
     NAME = "cityscape"          # Give the configuration a recognizable name
     IMAGES_PER_GPU = 1
-    NUM_CLASSES = 1 + 30        # Number of classes (including background)
+    NUM_CLASSES = 1 + 35        # Number of classes (including background)
 
 ############################################################
 #  Dataset Loader
@@ -50,8 +50,11 @@ class CityScapeDataset(General_Dataset):
 
         self.image_dir = os.path.join(dataset_dir, 'leftImg8bit', split)
         self.anno_dir = os.path.join(dataset_dir, gttype, split)
-        for id_tmp in ignore_id_list: del id2label[id_tmp]                                      # remove the unlabeled class
-        self.id2label = id2label
+
+        # print(id2label)
+        # print(id2label[0])
+        self.id2label = copy.copy(id2label)
+        # for id_tmp in ignore_id_list: del self.id2label[id_tmp]                                      # remove the unlabeled class
         self.images_dict = self.sweep_data()
 
     def get_image_ids(self, class_ids):
@@ -92,6 +95,7 @@ class CityScapeDataset(General_Dataset):
             obj_type_list = []
             for obj in anno_data.objects:
                 label = obj.label
+
                 if obj.deleted: continue            # If the object is deleted, skip it
 
                 # if the label is not known, but ends with a 'group' (e.g. cargroup) try to remove the s and see if that works
@@ -101,14 +105,14 @@ class CityScapeDataset(General_Dataset):
                 if (not label in name2label) and label.endswith('group'):
                     label = label[:-len('group')]
                     isGroup = True
-                if not label in name2label: printError('Label '{}' not known.'.format(label))
+                if not label in name2label: printError('Label {} not known.'.format(label))
                 labelTuple = name2label[label]          # the label tuple
 
                 # get the class ID
                 if encoding == 'ids': id_tmp = labelTuple.id
                 elif encoding == 'trainIds': id_tmp = labelTuple.trainId
 
-                if id_tmp in ignore_id_list: continue
+                # if id_tmp in ignore_id_list: continue
                 obj_type_list.append(id_tmp)
 
             obj_type_list = list(set(obj_type_list))
@@ -144,7 +148,7 @@ class CityScapeDataset(General_Dataset):
         for id_tmp in image_ids:             # Add images
             city_tmp = id_tmp.split('_')[0]
             self.add_image('cityscape', image_id=id_tmp, path=os.path.join(self.image_dir, city_tmp, id_tmp+'_leftImg8bit.png'), width=self.images_dict[id_tmp]['width'], 
-                height=self.images_dict[id_tmp]['height'], annotations_file=os.path.join(self.anno_dir, city_tmp, id_tmp+'_%s_polygons.json' % self.gttype))
+                height=self.images_dict[id_tmp]['height'], annotation_file=os.path.join(self.anno_dir, city_tmp, id_tmp+'_%s_polygons.json' % self.gttype))
 
     def load_mask(self, image_index):
         '''
@@ -158,12 +162,17 @@ class CityScapeDataset(General_Dataset):
             class_ids:              a 1D int32 array of class IDs of the instance masks.
         '''
         
-        image_info = self.image_info[image_id]
-        if image_info['source'] != 'cityscape': return super(CityScapeDataset, self).load_mask(image_index)
-        annotations_file = self.image_info[image_index]["annotations"]
+        image_info_tmp = self.image_info[image_index]
+        if image_info_tmp['source'] != 'cityscape': return super(CityScapeDataset, self).load_mask(image_index)
+        
+        # print(image_info_tmp)
+        # zxc
+        annotation_file = image_info_tmp['annotation_file']
+        # print(type(annotation_file))
+
         return self.anno2mask(annotation_file)
 
-    def anno2mask(annotation_file, encoding='ids'):
+    def anno2mask(self, annotation_file, encoding='ids'):
         '''
         convert an annotation file from Cityscapes to an array of mask images and its corresponding ids
 
@@ -171,7 +180,7 @@ class CityScapeDataset(General_Dataset):
             annotation_file:        a path to the annotation file corresponding to an image
 
         outputs:
-            masks:                  A bool array of shape [height, width, instance count] with one mask per instance.
+            masks:                  A bool array of shape [height, width, num_instances] with one mask per instance.
             class_ids:              a 1D int32 array of class IDs of the instance masks.
         '''
         anno_data = Annotation()
@@ -211,8 +220,7 @@ class CityScapeDataset(General_Dataset):
             if id_tmp < 0: continue         # If the ID is negative that polygon should not be drawn
             try:
                 drawer.polygon(polygon, fill=1)
-                mask_instance_tmp = np.array(instanceImg, dtype='bool').reshape((size[1], size[0], 1))
-                print(mask_instance_tmp.shape)
+                mask_instance_tmp = np.array(instanceImg, dtype='uint8')
                 masks.append(mask_instance_tmp)
                 class_ids.append(id_tmp)
             except:
