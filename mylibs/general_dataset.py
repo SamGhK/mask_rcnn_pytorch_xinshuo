@@ -28,8 +28,8 @@ class General_Dataset(object):
         # Add the class
         self.class_info.append({
             "source": source,
-            "id": class_id,
-            "name": class_name,
+            "id": class_id,             # integer
+            "name": class_name,         # string
         })
 
     def add_image(self, source, image_id, path, **kwargs):

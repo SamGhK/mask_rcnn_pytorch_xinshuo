@@ -520,9 +520,7 @@ class MaskRCNN(nn.Module):
                 now = datetime.datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4)), int(m.group(5)))
                 self.epoch = int(m.group(6))
         
-        self.log_dir = os.path.join(self.model_dir, "{}{:%Y%m%dT%H%M}".format(self.config.NAME.lower(), now))               # Directory for training logs
-        mkdir_if_missing(self.log_dir)
-
+        self.log_dir = os.path.join(self.model_dir, "{}{:%Y%m%dT%H%M}".format(self.config.NAME.lower(), now)); mkdir_if_missing(self.log_dir)
         self.checkpoint_path = os.path.join(self.log_dir, "mask_rcnn_{}_*epoch*.pth".format(self.config.NAME.lower()))      # Path to save after each epoch. Include placeholders that get filled by Keras.
         self.checkpoint_path = self.checkpoint_path.replace("*epoch*", "{:04d}")
         self.log_filepath = os.path.join(self.log_dir, 'log.txt')
@@ -561,7 +559,7 @@ class MaskRCNN(nn.Module):
             state_dict = torch.load(filepath)
             self.load_state_dict(state_dict, strict=False)
         else: print("Weight file not found ...")
-        self.set_log_dir(filepath)
+        # self.set_log_dir(filepath)
 
     def build(self, config):
         """Build Mask R-CNN architecture.
@@ -741,9 +739,9 @@ class MaskRCNN(nn.Module):
 
         # Data generators
         train_set = Mask_RCNN_Dataset(train_dataset, self.config, augment=True)
-        train_generator = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=True, num_workers=4)
+        train_generator = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=True, num_workers=1, pin_memory=False)
         val_set = Mask_RCNN_Dataset(val_dataset, self.config, augment=True)
-        val_generator = torch.utils.data.DataLoader(val_set, batch_size=1, shuffle=True, num_workers=4)
+        val_generator = torch.utils.data.DataLoader(val_set, batch_size=1, shuffle=True, num_workers=1, pin_memory=False)
 
         # logging
         log("\nStarting at epoch {}. LR={}\n".format(self.epoch+1, learning_rate), log=self.log_file)
@@ -771,7 +769,7 @@ class MaskRCNN(nn.Module):
 
         self.epoch = epochs
 
-    def train_epoch(self, datagenerator, optimizer, steps):
+    def train_epoch(self, datagenerator, optimizer, num_steps):
         batch_count = 0
         loss_sum, loss_rpn_class_sum, loss_rpn_bbox_sum, loss_mrcnn_class_sum, loss_mrcnn_bbox_sum, loss_mrcnn_mask_sum = 0, 0, 0, 0, 0, 0
         step = 0
@@ -800,24 +798,24 @@ class MaskRCNN(nn.Module):
                 batch_count = 0
 
             # Progress
-            printProgressBar(step + 1, steps, log=self.log_file, prefix="\t{}/{}".format(step + 1, steps), 
+            printProgressBar(step + 1, num_steps, log=self.log_file, prefix="\t{}/{}".format(step + 1, num_steps), 
                 suffix="Complete - loss: {:.5f} - rpn_class_loss: {:.5f} - rpn_bbox_loss: {:.5f} - mrcnn_class_loss: {:.5f} - mrcnn_bbox_loss: {:.5f} - mrcnn_mask_loss: {:.5f}".format(
                     loss.item(), rpn_class_loss.item(), rpn_bbox_loss.item(), mrcnn_class_loss.item(), mrcnn_bbox_loss.item(), mrcnn_mask_loss.item()), length=10)
 
-            loss_sum += loss.item()/steps
-            loss_rpn_class_sum += rpn_class_loss.item()/steps
-            loss_rpn_bbox_sum += rpn_bbox_loss.item()/steps
-            loss_mrcnn_class_sum += mrcnn_class_loss.item()/steps
-            loss_mrcnn_bbox_sum += mrcnn_bbox_loss.item()/steps
-            loss_mrcnn_mask_sum += mrcnn_mask_loss.item()/steps
+            loss_sum += loss.item()/num_steps
+            loss_rpn_class_sum += rpn_class_loss.item()/num_steps
+            loss_rpn_bbox_sum += rpn_bbox_loss.item()/num_steps
+            loss_mrcnn_class_sum += mrcnn_class_loss.item()/num_steps
+            loss_mrcnn_bbox_sum += mrcnn_bbox_loss.item()/num_steps
+            loss_mrcnn_mask_sum += mrcnn_mask_loss.item()/num_steps
 
-            # Break after 'steps' steps
-            if step==steps-1: break
+            # Break after 'num_steps' num_steps
+            if step==num_steps-1: break
             step += 1
 
         return loss_sum, loss_rpn_class_sum, loss_rpn_bbox_sum, loss_mrcnn_class_sum, loss_mrcnn_bbox_sum, loss_mrcnn_mask_sum
 
-    def valid_epoch(self, datagenerator, steps):
+    def valid_epoch(self, datagenerator, num_steps):
         step = 0
         loss_sum, loss_rpn_class_sum, loss_rpn_bbox_sum, loss_mrcnn_class_sum, loss_mrcnn_bbox_sum, loss_mrcnn_mask_sum = 0, 0, 0, 0, 0, 0
         for inputs in datagenerator:
@@ -837,22 +835,20 @@ class MaskRCNN(nn.Module):
             loss = rpn_class_loss + rpn_bbox_loss + mrcnn_class_loss + mrcnn_bbox_loss + mrcnn_mask_loss
 
             # Progress
-            printProgressBar(step + 1, steps, log=self.log_file, prefix="\t{}/{}".format(step + 1, steps),
+            printProgressBar(step + 1, num_steps, log=self.log_file, prefix="\t{}/{}".format(step + 1, num_steps),
                              suffix="Complete - loss: {:.5f} - rpn_class_loss: {:.5f} - rpn_bbox_loss: {:.5f} - mrcnn_class_loss: {:.5f} - mrcnn_bbox_loss: {:.5f} - mrcnn_mask_loss: {:.5f}".format(
-                                 loss.data.cpu()[0], rpn_class_loss.data.cpu()[0], rpn_bbox_loss.data.cpu()[0],
-                                 mrcnn_class_loss.data.cpu()[0], mrcnn_bbox_loss.data.cpu()[0],
-                                 mrcnn_mask_loss.data.cpu()[0]), length=10)
+                                 loss.item(), rpn_class_loss.item(), rpn_bbox_loss.item(), mrcnn_class_loss.item(), mrcnn_bbox_loss.item(), mrcnn_mask_loss.item()), length=10)
 
             # Statistics
-            loss_sum += loss.data.cpu()[0]/steps
-            loss_rpn_class_sum += rpn_class_loss.data.cpu()[0]/steps
-            loss_rpn_bbox_sum += rpn_bbox_loss.data.cpu()[0]/steps
-            loss_mrcnn_class_sum += mrcnn_class_loss.data.cpu()[0]/steps
-            loss_mrcnn_bbox_sum += mrcnn_bbox_loss.data.cpu()[0]/steps
-            loss_mrcnn_mask_sum += mrcnn_mask_loss.data.cpu()[0]/steps
+            loss_sum += loss.item()/num_steps
+            loss_rpn_class_sum += rpn_class_loss.item()/num_steps
+            loss_rpn_bbox_sum += rpn_bbox_loss.item()/num_steps
+            loss_mrcnn_class_sum += mrcnn_class_loss.item()/num_steps
+            loss_mrcnn_bbox_sum += mrcnn_bbox_loss.data.item()/num_steps
+            loss_mrcnn_mask_sum += mrcnn_mask_loss.data.item()/num_steps
 
-            # Break after 'steps' steps
-            if step==steps-1: break
+            # Break after 'num_steps' num_steps
+            if step==num_steps-1: break
             step += 1
 
         return loss_sum, loss_rpn_class_sum, loss_rpn_bbox_sum, loss_mrcnn_class_sum, loss_mrcnn_bbox_sum, loss_mrcnn_mask_sum

@@ -8,6 +8,7 @@ Written by Waleed Abdulla
 """
 
 import math, numpy as np, os
+from xinshuo_miscellaneous import print_log
 # Base Configuration Class
 # Don't use this class directly. Instead, sub-class it and override
 # the configurations you need to change.
@@ -147,28 +148,18 @@ class Config(object):
     def __init__(self):
         """Set values of computed attributes."""
         # Effective batch size
-        if self.GPU_COUNT > 0:
-            self.BATCH_SIZE = self.IMAGES_PER_GPU * self.GPU_COUNT
-        else:
-            self.BATCH_SIZE = self.IMAGES_PER_GPU
-
-        # Adjust step size based on batch size
-        self.STEPS_PER_EPOCH = self.BATCH_SIZE * self.STEPS_PER_EPOCH
-
-        # Input image size
-        self.IMAGE_SHAPE = np.array(
-            [self.IMAGE_MAX_DIM, self.IMAGE_MAX_DIM, 3])
+        if self.GPU_COUNT > 0: self.BATCH_SIZE = self.IMAGES_PER_GPU * self.GPU_COUNT
+        else: self.BATCH_SIZE = self.IMAGES_PER_GPU
+        self.STEPS_PER_EPOCH = self.BATCH_SIZE * self.STEPS_PER_EPOCH           # Adjust step size based on batch size
+        self.IMAGE_SHAPE = np.array([self.IMAGE_MAX_DIM, self.IMAGE_MAX_DIM, 3])        # Input image size
 
         # Compute backbone size from input image size
-        self.BACKBONE_SHAPES = np.array(
-            [[int(math.ceil(self.IMAGE_SHAPE[0] / stride)),
-              int(math.ceil(self.IMAGE_SHAPE[1] / stride))]
-             for stride in self.BACKBONE_STRIDES])
+        self.BACKBONE_SHAPES = np.array([[int(math.ceil(self.IMAGE_SHAPE[0] / stride)), int(math.ceil(self.IMAGE_SHAPE[1] / stride))] for stride in self.BACKBONE_STRIDES])
 
-    def display(self):
+    def display(self, log_file):
         """Display Configuration values."""
-        print("\nConfigurations:")
+        print_log('\nConfigurations:', log_file)
         for a in dir(self):
             if not a.startswith("__") and not callable(getattr(self, a)):
-                print("{:30} {}".format(a, getattr(self, a)))
-        print("\n")
+                print_log('{:30} {}'.format(a, getattr(self, a)), log_file)
+        print('\n', log_file)

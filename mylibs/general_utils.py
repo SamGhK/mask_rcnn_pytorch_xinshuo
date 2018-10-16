@@ -342,6 +342,10 @@ def printProgressBar(iteration, total, log, prefix='', suffix='', decimals=1, le
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
-    print_log('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), log=log)
+    str_to_print = '\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix)
+    # print(str_to_print)
+    # print(str_to_print)
+    # zxc
+    print_log(str_to_print, log=log, same_line=True)
     # Print New Line on Complete
     if iteration == total: print_log(' ', log=log)
