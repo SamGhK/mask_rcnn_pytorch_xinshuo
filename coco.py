@@ -48,8 +48,9 @@ class CocoDataset(General_Dataset):
         # print(len(class_ids))
         # zxc
 
-        print(len(coco.getImgIds(catIds=[1])))
-        print(len(set(coco.getImgIds(catIds=[1]))))
+        print(type(coco.getImgIds(catIds=[1])))
+        zxc
+        # print(len(set(coco.getImgIds(catIds=[1]))))
 
         # All images or a subset containing the requested ID. Duplicated images are removed
         if class_ids:
@@ -58,9 +59,15 @@ class CocoDataset(General_Dataset):
             image_ids = list(set(image_ids))        # Remove duplicates
         else: image_ids = list(coco.imgs.keys())  # All images
 
+
         # add all images and classes into the dataset
         for i in class_ids: self.add_class('coco', i, coco.loadCats(i)[0]['name'])          # Add classes
         for i in image_ids:             # Add images
+            # print(coco.getAnnIds(imgIds=[i], catIds=class_ids, iscrowd=None))
+            # print(coco.loadAnns(coco.getAnnIds(imgIds=[i], catIds=class_ids, iscrowd=None))[0])
+            # print(i)
+            # zxc
+
             self.add_image('coco', image_id=i, path=os.path.join(image_dir, coco.imgs[i]['file_name']), width=coco.imgs[i]['width'], 
                 height=coco.imgs[i]['height'], annotations=coco.loadAnns(coco.getAnnIds(imgIds=[i], catIds=class_ids, iscrowd=None)))
 
