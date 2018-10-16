@@ -73,7 +73,6 @@ class CityScapeDataset(General_Dataset):
             obj_ids_tmp = image_data['ids']
             intersect_list = find_unique_common_from_lists(class_ids, obj_ids_tmp)
             if len(intersect_list) > 0: image_id_list.append(image_id_tmp)
-            # print(image_id_list)
         return image_id_list
 
     def sweep_data(self, encoding='ids'):
@@ -132,6 +131,8 @@ class CityScapeDataset(General_Dataset):
             self.add_class:         add the requested class ids to the dataset
             self.add_image:         add the requested images to the dataset
         '''
+        # print(self.images_dict.keys())
+        # zxc
         
         if class_ids is not None:       # All images or a subset?
             image_ids = []
@@ -140,7 +141,8 @@ class CityScapeDataset(General_Dataset):
         else: 
             print('loading all data')
             class_ids = sorted(self.id2label.keys())    
-            image_ids = list(self.images_dict.keys())  # All images
+            image_ids = sorted(self.images_dict.keys())  # All images
+            print(image_ids[0: 5])
         print('number of images for the requested id added to the dataset is %d' % len(image_ids))
 
         # add all images and classes into the dataset
@@ -158,15 +160,13 @@ class CityScapeDataset(General_Dataset):
             image_index:            an index to the image in the dataset, from 0 to num_data
 
         outputs:
-            masks:                  A bool array of shape [height, width, num_instances] with one mask per instance.
+            masks:                  A uint8 array of shape [height, width, num_instances] with one mask per instance.
             class_ids:              a 1D int32 array of class IDs of the instance masks.
         '''
         
         image_info_tmp = self.image_info[image_index]
         if image_info_tmp['source'] != 'cityscape': return super(CityScapeDataset, self).load_mask(image_index)
-        
-        # print(image_info_tmp)
-        # zxc
+
         annotation_file = image_info_tmp['annotation_file']
         # print(type(annotation_file))
 
@@ -180,7 +180,7 @@ class CityScapeDataset(General_Dataset):
             annotation_file:        a path to the annotation file corresponding to an image
 
         outputs:
-            masks:                  A bool array of shape [height, width, num_instances] with one mask per instance.
+            masks:                  A uint8 array of shape [height, width, num_instances] with one mask per instance.
             class_ids:              a 1D int32 array of class IDs of the instance masks.
         '''
         anno_data = Annotation()

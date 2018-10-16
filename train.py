@@ -30,7 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_dir', required=False, default=save_dir, metavar="/path/to/logs/", help='Logs and checkpoints directory (default=logs/)')
     parser.add_argument('--limit', required=False, default=500, metavar="<image count>", help='Images to use for evaluation (default=500)')
     parser.add_argument('--download', required=False, default=False, type=bool, metavar="<True|False>", help='Automatically download and unzip MS-COCO files (default=False)')
-    parser.add_argument('--manualSeed', required=False, default='1234', help='seed')
+    parser.add_argument('--manualSeed', required=False, type=int, default=1234, help='seed')
     args = parser.parse_args()
 
     # Prepare options
@@ -63,6 +63,7 @@ if __name__ == '__main__':
 
     config.display(model.log_file)
     # print_log('Command: %s' % args.command, model.log_file)
+    print_log('Seed: %d' % args.manualSeed, model.log_file)
     print_log('Model: %s' % args.model, model.log_file)
     print_log('Dataset: %s' % args.dataset, model.log_file)
     print_log('Save Directory: %s' % args.save_dir, model.log_file)

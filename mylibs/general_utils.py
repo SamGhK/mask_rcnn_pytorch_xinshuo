@@ -8,8 +8,8 @@ Written by Waleed Abdulla
 """
 
 import sys, os, math, random, numpy as np, scipy.misc, scipy.ndimage, skimage.color, skimage.io, torch
-from xinshuo_images import image_resize
-from xinshuo_miscellaneous import print_log
+# from xinshuo_images import image_resize
+# from xinshuo_miscellaneous import print_log
 
 ############################################################
 #  Data Formatting
@@ -69,71 +69,33 @@ def unmold_image(normalized_images, config):
     """Takes a image normalized with mold() and returns the original."""
     return (normalized_images + config.MEAN_PIXEL).astype(np.uint8)
 
-############################################################
-#  Bounding Boxes
-############################################################
-def extract_bboxes(mask):
-    """Compute bounding boxes from masks.
-    mask: [height, width, num_instances]. Mask pixels are either 1 or 0.
+# ############################################################
+# #  Bounding Boxes
+# ############################################################
+# def extract_bboxes(mask):
+#     """Compute bounding boxes from masks.
+#     mask: [height, width, num_instances]. Mask pixels are either 1 or 0.
 
-    Returns: bbox array [num_instances, (y1, x1, y2, x2)].
-    """
-    boxes = np.zeros([mask.shape[-1], 4], dtype=np.int32)
-    for i in range(mask.shape[-1]):
-        m = mask[:, :, i]
-        # Bounding box.
-        horizontal_indicies = np.where(np.any(m, axis=0))[0]
-        vertical_indicies = np.where(np.any(m, axis=1))[0]
-        if horizontal_indicies.shape[0]:
-            x1, x2 = horizontal_indicies[[0, -1]]
-            y1, y2 = vertical_indicies[[0, -1]]
-            # x2 and y2 should not be part of the box. Increment by 1.
-            x2 += 1
-            y2 += 1
-        else:
-            # No mask for this instance. Might happen due to
-            # resizing or cropping. Set bbox to zeros
-            x1, x2, y1, y2 = 0, 0, 0, 0
-        boxes[i] = np.array([y1, x1, y2, x2])
-    return boxes.astype(np.int32)
-
-def compute_iou(box, boxes, box_area, boxes_area):
-    """Calculates IoU of the given box with the array of the given boxes.
-    box: 1D vector [y1, x1, y2, x2]
-    boxes: [boxes_count, (y1, x1, y2, x2)]
-    box_area: float. the area of 'box'
-    boxes_area: array of length boxes_count.
-
-    Note: the areas are passed in rather than calculated here for
-          efficency. Calculate once in the caller to avoid duplicate work.
-    """
-    # Calculate intersection areas
-    y1 = np.maximum(box[0], boxes[:, 0])
-    y2 = np.minimum(box[2], boxes[:, 2])
-    x1 = np.maximum(box[1], boxes[:, 1])
-    x2 = np.minimum(box[3], boxes[:, 3])
-    intersection = np.maximum(x2 - x1, 0) * np.maximum(y2 - y1, 0)
-    union = box_area + boxes_area[:] - intersection[:]
-    iou = intersection / union
-    return iou
-
-def compute_overlaps(boxes1, boxes2):
-    """Computes IoU overlaps between two sets of boxes.
-    boxes1, boxes2: [N, (y1, x1, y2, x2)].
-
-    For better performance, pass the largest set first and the smaller second.
-    """
-    # Areas of anchors and GT boxes
-    area1 = (boxes1[:, 2] - boxes1[:, 0]) * (boxes1[:, 3] - boxes1[:, 1])
-    area2 = (boxes2[:, 2] - boxes2[:, 0]) * (boxes2[:, 3] - boxes2[:, 1])
-
-    # Compute overlaps to generate matrix [boxes1 count, boxes2 count]
-    # Each cell contains the IoU value.
-    overlaps = np.zeros((boxes1.shape[0], boxes2.shape[0]))
-    for i in range(overlaps.shape[1]):
-        box2 = boxes2[i]
-        overlaps[:, i] = compute_iou(box2, boxes1, area2[i], area1)
-    return overlaps
+#     Returns: bbox array [num_instances, (y1, x1, y2, x2)].
+#     """
+#     boxes = np.zeros([mask.shape[-1], 4], dtype=np.int32)
+#     for i in range(mask.shape[-1]):
+#         m = mask[:, :, i]
+#         # Bounding box.
+#         horizontal_indicies = np.where(np.any(m, axis=0))[0]
+#         vertical_indicies = np.where(np.any(m, axis=1))[0]
+#         if horizontal_indicies.shape[0]:
+#             x1, x2 = horizontal_indicies[[0, -1]]
+#             y1, y2 = vertical_indicies[[0, -1]]
+#             # x2 and y2 should not be part of the box. Increment by 1.
+#             x2 += 1
+#             y2 += 1
+#         else:
+#             # No mask for this instance. Might happen due to
+#             # resizing or cropping. Set bbox to zeros
+#             x1, x2, y1, y2 = 0, 0, 0, 0
+#         boxes[i] = np.array([y1, x1, y2, x2])
+#     return boxes.astype(np.int32)
 
 def resize_image(image, min_dim=None, max_dim=None, padding=False):
     """
@@ -185,76 +147,6 @@ def resize_image(image, min_dim=None, max_dim=None, padding=False):
         image = np.pad(image, padding, mode='constant', constant_values=0)
         window = (top_pad, left_pad, h + top_pad, w + left_pad)
     return image, window, scale, padding
-
-def resize_mask(mask, scale, padding):
-    """Resizes a mask using the given scale and padding.
-    Typically, you get the scale and padding from resize_image() to
-    ensure both, the image and the mask, are resized consistently.
-
-    scale: mask scaling factor
-    padding: Padding to add to the mask in the form
-            [(top, bottom), (left, right), (0, 0)]
-    """
-    h, w = mask.shape[:2]
-    mask = scipy.ndimage.zoom(mask, zoom=[scale, scale, 1], order=0)
-    mask = np.pad(mask, padding, mode='constant', constant_values=0)
-    return mask
-
-def minimize_mask(bbox, mask, mini_shape):
-    """Resize masks to a smaller version to cut memory load.
-    Mini-masks can then resized back to image scale using expand_masks()
-
-    See inspect_data.ipynb notebook for more details.
-    """
-    mini_mask = np.zeros(mini_shape + (mask.shape[-1],), dtype=bool)
-    for i in range(mask.shape[-1]):
-        m = mask[:, :, i]
-        y1, x1, y2, x2 = bbox[i][:4]
-        m = m[y1:y2, x1:x2]
-        if m.size == 0:
-            raise Exception("Invalid bounding box with area of zero")
-        m = scipy.misc.imresize(m.astype(float), mini_shape, interp='bilinear')
-        mini_mask[:, :, i] = np.where(m >= 128, 1, 0)
-    return mini_mask
-
-def expand_mask(bbox, mini_mask, image_shape):
-    """Resizes mini masks back to image size. Reverses the change
-    of minimize_mask().
-
-    See inspect_data.ipynb notebook for more details.
-    """
-    mask = np.zeros(image_shape[:2] + (mini_mask.shape[-1],), dtype=bool)
-    for i in range(mask.shape[-1]):
-        m = mini_mask[:, :, i]
-        y1, x1, y2, x2 = bbox[i][:4]
-        h = y2 - y1
-        w = x2 - x1
-        m = scipy.misc.imresize(m.astype(float), (h, w), interp='bilinear')
-        mask[y1:y2, x1:x2, i] = np.where(m >= 128, 1, 0)
-    return mask
-
-
-# TODO: Build and use this function to reduce code duplication
-def mold_mask(mask, config):
-    pass
-
-def unmold_mask(mask, bbox, image_shape):
-    """Converts a mask generated by the neural network into a format similar
-    to it's original shape.
-    mask: [height, width] of type float. A small, typically 28x28 mask.
-    bbox: [y1, x1, y2, x2]. The box to fit the mask in.
-
-    Returns a binary mask with the same size as the original image.
-    """
-    threshold = 0.5
-    y1, x1, y2, x2 = bbox
-    mask = scipy.misc.imresize(mask, (y2 - y1, x2 - x1), interp='bilinear').astype(np.float32) / 255.0
-    mask = np.where(mask >= threshold, 1, 0).astype(np.uint8)
-
-    # Put the mask in the right location.
-    full_mask = np.zeros(image_shape[:2], dtype=np.uint8)
-    full_mask[y1:y2, x1:x2] = mask
-    return full_mask
 
 ############################################################
 #  Anchors
@@ -310,42 +202,3 @@ def generate_pyramid_anchors(scales, ratios, feature_shapes, feature_strides, an
     for i in range(len(scales)):
         anchors.append(generate_anchors(scales[i], ratios, feature_shapes[i], feature_strides[i], anchor_stride))
     return np.concatenate(anchors, axis=0)
-
-############################################################
-#  Logging Utility Functions
-############################################################
-
-def log(text, log, array=None):
-    """Prints a text message. And, optionally, if a Numpy array is provided it
-    prints it's shape, min, and max values.
-    """
-    if array is not None:
-        text = text.ljust(25)
-        text += ("shape: {:20}  min: {:10.5f}  max: {:10.5f}".format(
-            str(array.shape),
-            array.min() if array.size else "",
-            array.max() if array.size else ""))
-    print_log(text, log=log)
-
-def printProgressBar(iteration, total, log, prefix='', suffix='', decimals=1, length=100, fill='█'):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
-    """
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    str_to_print = '\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix)
-    # print(str_to_print)
-    # print(str_to_print)
-    # zxc
-    print_log(str_to_print, log=log, same_line=True)
-    # Print New Line on Complete
-    if iteration == total: print_log(' ', log=log)

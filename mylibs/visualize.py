@@ -11,7 +11,7 @@ import os, random, itertools, colorsys, numpy as np, matplotlib.pyplot as plt, m
 from skimage.measure import find_contours
 if "DISPLAY" not in os.environ: plt.switch_backend('agg')
 from matplotlib.patches import Polygon
-from .general_utils import unmold_mask
+from xinshuo_math import unmold_mask
 
 ############################################################
 #  Visualization

@@ -26,14 +26,10 @@ print(class_ids.shape)
 print(class_ids.dtype)
 print(class_ids)
 
-
 image = dataset_cityscape.load_image(0)
 save_image(image, save_path='img.jpg')
 
 visualize_image(masks[:, :, 1], save_path='test.jpg')
-
-
-
 
 # print(dataset_cityscape.image_ids)
 print(dataset_cityscape.num_classes)

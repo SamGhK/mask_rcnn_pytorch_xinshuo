@@ -2,7 +2,9 @@
 # Email: xinshuow@andrew.cmu.edu
 
 import torch, numpy as np, torch.utils.data, random
-from .general_utils import resize_mask, resize_image, extract_bboxes, minimize_mask, compose_image_meta, compute_overlaps, generate_pyramid_anchors, mold_image
+from .general_utils import resize_image, compose_image_meta, generate_pyramid_anchors, mold_image
+from xinshuo_math import bboxes_from_mask, resize_mask, minimize_mask, compute_overlaps
+from xinshuo_io import fileparts
 
 ############################################################
 #  Data Generator
@@ -39,9 +41,8 @@ def load_image_gt(dataset, config, image_id, augment=False, use_mini_mask=False)
             image = np.fliplr(image)
             mask = np.fliplr(mask)
 
-    # Bounding boxes. Note that some boxes might be all zeros
-    # if the corresponding mask got cropped out.
-    bbox = extract_bboxes(mask)
+    # Bounding boxes. Note that some boxes might be all zeros if the corresponding mask got cropped out.
+    bbox = bboxes_from_mask(mask)
 
     # Active classes
     # Different datasets have different classes, so track the classes supported in the dataset of this image.
@@ -49,7 +50,13 @@ def load_image_gt(dataset, config, image_id, augment=False, use_mini_mask=False)
     source_class_ids = dataset.source_class_ids[dataset.image_info[image_id]['source']]
     active_class_ids[source_class_ids] = 1
 
-    if use_mini_mask: mask = minimize_mask(bbox, mask, config.MINI_MASK_SHAPE)          # Resize masks to smaller size to reduce memory usage
+    if use_mini_mask: 
+        # print(mask.shape)
+        # print(config.MINI_MASK_SHAPE)
+        # print(bbox.shape)
+        mask = minimize_mask(bbox, mask, config.MINI_MASK_SHAPE)          # Resize masks to smaller size to reduce memory usage
+        # print(mask.shape)
+        # zxc
     image_meta = compose_image_meta(image_id, image.shape, window, active_class_ids)          # Image meta data
     return image, image_meta, class_ids, bbox, mask
 
@@ -174,21 +181,31 @@ class Mask_RCNN_Dataset(torch.utils.data.Dataset):
         self.b = 0                      # batch item index
         self.image_index = -1
         self.image_ids = np.array(dataset.image_ids)     # a list of image id, length is number of data
+        # print(self.image_ids)
+        # zxc
         self.error_count = 0
         self.dataset = dataset
         self.config = config
         self.augment = augment
+        self.skip = False
         self.anchors_ = generate_pyramid_anchors(config.RPN_ANCHOR_SCALES, config.RPN_ANCHOR_RATIOS, config.BACKBONE_SHAPES, config.BACKBONE_STRIDES, config.RPN_ANCHOR_STRIDE)     # [anchor_count, (y1, x1, y2, x2)]
 
     def __getitem__(self, image_index):
         # Get GT bounding boxes and masks for image.
+        image_path = self.dataset.image_info[image_index]['path']
+        _, filename, _ = fileparts(image_path)
+
+        # print(image_index)
+        if image_index == 1396: self.skip = False
+        if self.skip: return [], [], [], [], [], [], [], image_index, filename
+        
         image_id = self.image_ids[image_index]
         image, image_metas, gt_class_ids, gt_boxes, gt_masks = load_image_gt(self.dataset, self.config, image_id, augment=self.augment, use_mini_mask=self.config.USE_MINI_MASK)
 
         # Skip images that have no instances. This can happen in cases
         # where we train on a subset of classes and the image doesn't
         # have any of the classes we care about.
-        if not np.any(gt_class_ids > 0): return [], [], [], [], [], [], []
+        if not np.any(gt_class_ids > 0): return [], [], [], [], [], [], [], image_index, filename
         rpn_match, rpn_bbox = build_rpn_targets(image.shape, self.anchors_, gt_class_ids, gt_boxes, self.config)     # find the matches for every anchor and the deltas
 
         # If more instances than fits in the array, sub-sample from them.
@@ -206,7 +223,7 @@ class Mask_RCNN_Dataset(torch.utils.data.Dataset):
         image_metas = torch.from_numpy(image_metas)
         rpn_match, rpn_bbox = torch.from_numpy(rpn_match), torch.from_numpy(rpn_bbox).float()
         gt_class_ids, gt_boxes, gt_masks = torch.from_numpy(gt_class_ids), torch.from_numpy(gt_boxes).float(), torch.from_numpy(gt_masks.astype(int).transpose(2, 0, 1)).float()
-        return images, image_metas, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks
+        return images, image_metas, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks, image_index, filename
 
     def __len__(self):
         return self.image_ids.shape[0]
