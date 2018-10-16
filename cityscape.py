@@ -8,14 +8,16 @@ from cityscapesscripts.helpers.labels import id2label, labels, name2label
 from cityscapesscripts.helpers.annotation import Annotation
 from mylibs import General_Dataset
 from config import Config
-from xinshuo_io import mkdir_if_missing
-from xinshuo_miscellaneous import is_path_exists
+from xinshuo_io import mkdir_if_missing, fileparts, load_list_from_folder
+from xinshuo_miscellaneous import is_path_exists, islist, find_unique_common_from_lists
 try:
     import PIL.Image     as Image
     import PIL.ImageDraw as ImageDraw
 except:
     print("Failed to import the image processing packages.")
     sys.exit(-1)
+
+ignore_id_list = [0, 1, 2, 3, 4]
 
 ############################################################
 #  Configurations
@@ -31,7 +33,7 @@ class CityscapeConfig(Config):
 #  Dataset Loader
 ############################################################
 class CityScapeDataset(General_Dataset):
-    def __init__(self, dataset_dir, split):
+    def __init__(self, dataset_dir, split, gttype):
         '''
         create a subset of the CityScape dataset
 
@@ -39,13 +41,16 @@ class CityScapeDataset(General_Dataset):
         subset: What to load (train, val)
         '''
         super(CityScapeDataset, self).__init__()
-        assert subset == 'train' or subset == 'val', 'the subset can be either train or val'
+        assert split == 'train' or split == 'val', 'the subset can be either train or val'
+        assert gttype == 'gtFine' or gttype == 'gtCoarse', 'the type of gt data is not good'
 
         self.dataset_dir = dataset_dir
         self.split = split
-        self.image_dir = os.path.join(dataset_dir, 'leftImg8bit', subset)
-        self.anno_dir = os.path.join(dataset_dir, 'gtFine', subset)
-        del id2label[0]; del id2label[1]; del id2label[2]; del id2label[3]; del id2label[4]         # remove the unlabeled class
+        self.gttype = gttype
+
+        self.image_dir = os.path.join(dataset_dir, 'leftImg8bit', split)
+        self.anno_dir = os.path.join(dataset_dir, gttype, split)
+        for id_tmp in ignore_id_list: del id2label[id_tmp]                                      # remove the unlabeled class
         self.id2label = id2label
         self.images_dict = self.sweep_data()
 
@@ -59,44 +64,87 @@ class CityScapeDataset(General_Dataset):
         outputs:
             image_ids:          a list of image IDs containing the requested classes
         '''
+        assert islist(class_ids), 'the input class ids is not a list'
+        image_id_list = []
+        for image_id_tmp, image_data in self.images_dict.items():
+            obj_ids_tmp = image_data['ids']
+            intersect_list = find_unique_common_from_lists(class_ids, obj_ids_tmp)
+            if len(intersect_list) > 0: image_id_list.append(image_id_tmp)
+            # print(image_id_list)
+        return image_id_list
 
-    def sweep_data(self):
+    def sweep_data(self, encoding='ids'):
         '''
         sweep the data and return the dictionary of infomation for every images
 
         outputs:
-            images_dict:        a dictionary of info, keys are the image ids, values are a dictionary {''}
+            images_dict:        a dictionary of info, keys are the image ids, values are a dictionary {'width':, 'height':, 'ids': a list of object ids contained}
         '''
-        print('loading annotations into memory...')
-        anno_list, num_anno = load_list_from_folder(self.anno_dir, ext_filter=['.json'], depth=2)
+        print('loading annotations into memory from %s...' % self.anno_dir)
+        anno_list, num_anno = load_list_from_folder(self.anno_dir, ext_filter=['.json'], recursive=True, depth=2)
         print('number of annotations has been loaded: %d' % num_anno)
+        images_dict = {}
         for anno_tmp in anno_list:
+            _, filename, _ = fileparts(anno_tmp)
+            image_id = filename.split('_gt')[0]
             anno_data = Annotation()
-            anno_data.fromJsonFile(annotation_file)
+            anno_data.fromJsonFile(anno_tmp)
+            obj_type_list = []
+            for obj in anno_data.objects:
+                label = obj.label
+                if obj.deleted: continue            # If the object is deleted, skip it
+
+                # if the label is not known, but ends with a 'group' (e.g. cargroup) try to remove the s and see if that works
+                # also we know that this polygon describes a group
+                # TODO: ?????? what is the group
+                isGroup = False
+                if (not label in name2label) and label.endswith('group'):
+                    label = label[:-len('group')]
+                    isGroup = True
+                if not label in name2label: printError('Label '{}' not known.'.format(label))
+                labelTuple = name2label[label]          # the label tuple
+
+                # get the class ID
+                if encoding == 'ids': id_tmp = labelTuple.id
+                elif encoding == 'trainIds': id_tmp = labelTuple.trainId
+
+                if id_tmp in ignore_id_list: continue
+                obj_type_list.append(id_tmp)
+
+            obj_type_list = list(set(obj_type_list))
+            image_data = {'width': anno_data.imgWidth, 'height': anno_data.imgHeight, 'ids': obj_type_list}
+            images_dict[image_id] = image_data
+
+        return images_dict
 
     def load_data(self, class_ids=None):
-        """
-        load the data from thr subset, basically to create the list of images and list of class ids
+        '''
+        load the data from the subset, basically to create the list of images and list of class ids
 
-        class_ids: If provided, only loads images that have the given classes.
-        """
+        parameters:
+            class_ids:              If provided, only loads images that have the given classes.
 
-        # Load all classes or a subset?
-        if not class_ids: class_ids = sorted(self.id2label.keys())
-
-        # All images or a subset?
-        if class_ids:
+        outputs:
+            self.add_class:         add the requested class ids to the dataset
+            self.add_image:         add the requested images to the dataset
+        '''
+        
+        if class_ids is not None:       # All images or a subset?
             image_ids = []
             for id_tmp in class_ids: image_ids.extend(self.get_image_ids(class_ids=[id_tmp]))
-            image_ids = list(set(image_ids))        # Remove duplicates
-        else: image_ids = list(self.images_dict.keys())  # All images
+            image_ids = list(set(image_ids))        # Remove `1duplicates
+        else: 
+            print('loading all data')
+            class_ids = sorted(self.id2label.keys())    
+            image_ids = list(self.images_dict.keys())  # All images
+        print('number of images for the requested id added to the dataset is %d' % len(image_ids))
 
         # add all images and classes into the dataset
         for id_tmp in class_ids: self.add_class('cityscape', id_tmp, self.id2label[id_tmp].name)          # Add classes
         for id_tmp in image_ids:             # Add images
             city_tmp = id_tmp.split('_')[0]
-            self.add_image('cityscape', image_id=i, path=os.path.join(self.image_dir, city_tmp, id_tmp+'_leftImg8bit.png'), width=self.images_dict[id_tmp]['width'], 
-                height=self.images_dict[id_tmp]['height'], annotations_file=os.path.join(self.anno_dir, city_tmp, id_tmp+'_gtFine_polygons.json'))
+            self.add_image('cityscape', image_id=id_tmp, path=os.path.join(self.image_dir, city_tmp, id_tmp+'_leftImg8bit.png'), width=self.images_dict[id_tmp]['width'], 
+                height=self.images_dict[id_tmp]['height'], annotations_file=os.path.join(self.anno_dir, city_tmp, id_tmp+'_%s_polygons.json' % self.gttype))
 
     def load_mask(self, image_index):
         '''
@@ -176,3 +224,8 @@ class CityScapeDataset(General_Dataset):
             class_ids = np.array(class_ids, dtype=np.int32)
             return masks, class_ids
         else: return super(CityScapeDataset, self).load_mask(image_id)
+
+    def visualization(self):
+        '''
+        visualize the images loaded into the dataset
+        '''
