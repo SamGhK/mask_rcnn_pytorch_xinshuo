@@ -30,7 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_dir', required=False, default=save_dir, metavar="/path/to/logs/", help='Logs and checkpoints directory (default=logs/)')
     parser.add_argument('--limit', required=False, default=500, metavar="<image count>", help='Images to use for evaluation (default=500)')
     parser.add_argument('--download', required=False, default=False, type=bool, metavar="<True|False>", help='Automatically download and unzip MS-COCO files (default=False)')
-    parser.add_argument('--manualSeed', required=False, type=int, default=1234, help='seed')
+    parser.add_argument('--manualSeed', required=False, type=int, default=2345, help='seed')
     args = parser.parse_args()
 
     # Prepare options
@@ -53,7 +53,7 @@ if __name__ == '__main__':
             IMAGES_PER_GPU = 1
             DETECTION_MIN_CONFIDENCE = 0
             if args.dataset == 'coco': NUM_CLASSES = 1 + 80
-            else: NUM_CLASSES = 1 + 35
+            else: NUM_CLASSES = 1 + 12
 
         config = InferenceConfig()
 

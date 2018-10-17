@@ -5,6 +5,7 @@ import torch, numpy as np, torch.utils.data, random
 from .general_utils import resize_image, compose_image_meta, generate_pyramid_anchors, mold_image
 from xinshuo_math import bboxes_from_mask, resize_mask, minimize_mask, compute_overlaps
 from xinshuo_io import fileparts
+from xinshuo_visualization import visualize_image, visualize_image_with_bbox
 
 ############################################################
 #  Data Generator
@@ -26,9 +27,11 @@ def load_image_gt(dataset, config, image_id, augment=False, use_mini_mask=False)
     """
 
     # Load image and mask
-    image = dataset.load_image(image_id)
-    mask, class_ids = dataset.load_mask(image_id)
-    # print(mask.shape)
+    image = dataset.load_image(image_id)                    # (height x width x 3)
+    mask, class_ids = dataset.load_mask(image_id)           # (height x width x num_instances), (num_instances, )
+    # print(mask.shape)                   
+    # print(image.shape)
+    # print(class_ids.shape)
 
     # TODO, check what happened here
     # assert len(mask.shape) == 3 and mask.shape[0] == image.shape[0] and mask.shape[1] == image.shape[1], 'the input mask shape is not correct'
@@ -42,7 +45,11 @@ def load_image_gt(dataset, config, image_id, augment=False, use_mini_mask=False)
             mask = np.fliplr(mask)
 
     # Bounding boxes. Note that some boxes might be all zeros if the corresponding mask got cropped out.
-    bbox = bboxes_from_mask(mask)
+    bbox = bboxes_from_mask(mask)                           # (num_instances x 4)
+    # TODO, make sure all boxes are bigger than 0, some masks might be small 
+
+    # print(bbox.shape)
+    # zxc
 
     # Active classes
     # Different datasets have different classes, so track the classes supported in the dataset of this image.
@@ -54,6 +61,11 @@ def load_image_gt(dataset, config, image_id, augment=False, use_mini_mask=False)
         # print(mask.shape)
         # print(config.MINI_MASK_SHAPE)
         # print(bbox.shape)
+
+        # visualize_image(image, save_path='image.jpg')
+        # for i in range(20):
+            # visualize_image(mask[:, :, i], save_path='mask%03d.jpg' % i)
+
         mask = minimize_mask(bbox, mask, config.MINI_MASK_SHAPE)          # Resize masks to smaller size to reduce memory usage
         # print(mask.shape)
         # zxc
@@ -196,10 +208,12 @@ class Mask_RCNN_Dataset(torch.utils.data.Dataset):
         _, filename, _ = fileparts(image_path)
 
         # print(image_index)
-        if image_index == 1396: self.skip = False
+        if image_index == 155: self.skip = False
         if self.skip: return [], [], [], [], [], [], [], image_index, filename
         
         image_id = self.image_ids[image_index]
+        # print(image_index)
+        # print(filename)
         image, image_metas, gt_class_ids, gt_boxes, gt_masks = load_image_gt(self.dataset, self.config, image_id, augment=self.augment, use_mini_mask=self.config.USE_MINI_MASK)
 
         # Skip images that have no instances. This can happen in cases

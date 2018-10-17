@@ -27,7 +27,7 @@ class CityscapeConfig(Config):
     """
     NAME = "cityscape"          # Give the configuration a recognizable name
     IMAGES_PER_GPU = 1
-    NUM_CLASSES = 1 + 35        # Number of classes (including background)
+    NUM_CLASSES = 1 + 12        # Number of classes (including background)
 
 ############################################################
 #  Dataset Loader
@@ -50,11 +50,7 @@ class CityScapeDataset(General_Dataset):
 
         self.image_dir = os.path.join(dataset_dir, 'leftImg8bit', split)
         self.anno_dir = os.path.join(dataset_dir, gttype, split)
-
-        # print(id2label)
-        # print(id2label[0])
         self.id2label = copy.copy(id2label)
-        # for id_tmp in ignore_id_list: del self.id2label[id_tmp]                                      # remove the unlabeled class
         self.images_dict = self.sweep_data()
 
     def get_image_ids(self, class_ids):
@@ -104,7 +100,9 @@ class CityScapeDataset(General_Dataset):
                 if (not label in name2label) and label.endswith('group'):
                     label = label[:-len('group')]
                     isGroup = True
-                if not label in name2label: printError('Label {} not known.'.format(label))
+                if not label in name2label:
+                    # printError('Label {} not known.'.format(label))
+                    continue
                 labelTuple = name2label[label]          # the label tuple
 
                 # get the class ID
@@ -142,7 +140,7 @@ class CityScapeDataset(General_Dataset):
             print('loading all data')
             class_ids = sorted(self.id2label.keys())    
             image_ids = sorted(self.images_dict.keys())  # All images
-            print(image_ids[0: 5])
+            # print(image_ids[0: 5])
         print('number of images for the requested id added to the dataset is %d' % len(image_ids))
 
         # add all images and classes into the dataset
@@ -188,16 +186,16 @@ class CityScapeDataset(General_Dataset):
         size = (anno_data.imgWidth, anno_data.imgHeight)          # the size of the image
 
         # the background
-        if encoding == 'ids': backgroundId = name2label['unlabeled'].id
-        elif encoding == 'trainIds': backgroundId = name2label['unlabeled'].trainId
-        else:
-            print("Unknown encoding '{}'".format(encoding))
-            return None
+        # if encoding == 'ids': backgroundId = name2label['unlabeled'].id
+        # elif encoding == 'trainIds': backgroundId = name2label['unlabeled'].trainId
+        # else:
+            # print("Unknown encoding '{}'".format(encoding))
+            # return None
 
         masks = []
         class_ids = []
         for obj in anno_data.objects:
-            instanceImg = Image.new('I', size, backgroundId)        # this is the image that we want to create
+            instanceImg = Image.new('I', size, 0)        # this is the image that we want to create
             drawer = ImageDraw.Draw(instanceImg)                  # a drawer to draw into the image
             label   = obj.label
             polygon = obj.polygon
@@ -210,7 +208,9 @@ class CityScapeDataset(General_Dataset):
             if (not label in name2label) and label.endswith('group'):
                 label = label[:-len('group')]
                 isGroup = True
-            if not label in name2label: printError( "Label '{}' not known.".format(label) )
+            if not label in name2label: 
+                # printError( "Label '{}' not known.".format(label) )
+                continue
             labelTuple = name2label[label]          # the label tuple
 
             # get the class ID

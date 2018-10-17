@@ -38,12 +38,14 @@ print(dataset_cityscape.source_class_ids)
 
 # Data generators
 train_set = Mask_RCNN_Dataset(dataset_cityscape, config, augment=True)
-train_generator = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=True, num_workers=1, pin_memory=False)
+train_generator = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=False, num_workers=4, pin_memory=True)
 
 count = 0
-for images, image_metas, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks in train_generator:
+for images, image_metas, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks, image_index, filename in train_generator:
 	# print()
-	print(count)
+	# print(count)
 	# print(images)
+	print(image_index.item())
+	print(filename[0])
 
 	count += 1

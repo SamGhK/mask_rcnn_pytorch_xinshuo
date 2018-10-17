@@ -736,9 +736,9 @@ class MaskRCNN(nn.Module):
 
         # Data generators
         train_set = Mask_RCNN_Dataset(train_dataset, self.config, augment=True)
-        train_generator = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=True, num_workers=1, pin_memory=False)
+        train_generator = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=True, num_workers=4, pin_memory=True)
         val_set = Mask_RCNN_Dataset(val_dataset, self.config, augment=True)
-        val_generator = torch.utils.data.DataLoader(val_set, batch_size=1, shuffle=True, num_workers=1, pin_memory=False)
+        val_generator = torch.utils.data.DataLoader(val_set, batch_size=1, shuffle=True, num_workers=4, pin_memory=True)
 
         # logging
         log("\nStarting at epoch {}. LR={}\n".format(self.epoch+1, learning_rate), log=self.log_file)
