@@ -3,8 +3,9 @@
 
 import os, coco, torch, numpy as np, matplotlib.pyplot as plt
 if "DISPLAY" not in os.environ: plt.switch_backend('agg')
-from mylibs import MaskRCNN, display_instances
+from mylibs import MaskRCNN
 from xinshuo_io import load_list_from_folder, fileparts, mkdir_if_missing, load_image, save_image
+from xinshuo_visualization import visualize_image_with_bbox_mask
 from xinshuo_visualization.python.private import save_vis_close_helper
 from xinshuo_miscellaneous import convert_secs2time, Timer
 
@@ -93,7 +94,7 @@ for image_file_tmp in image_list:
 	# visualize and save results
 	r = results[0]			# results from the first image
 	num_instances = r['masks'].shape[-1]
-	fig, _ = display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
+	fig, _ = visualize_image_with_bbox_mask(image, boxes=r['rois'], masks=r['masks'], class_ids=r['class_ids'], class_names=class_names, scores=r['scores'])
 	save_path_tmp = os.path.join(vis_dir, filename+'.jpg')
 	save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)
 
@@ -118,6 +119,6 @@ for image_file_tmp in image_list:
 		save_str = '%s %s %s %s\n' % (image_file_tmp, class_tmp, score_tmp, save_path_tmp)
 		detection_results_file.write(save_str)
 
-	count +=1
+	count += 1
 
 detection_results_file.close()

@@ -107,8 +107,8 @@ labels = [
     # Label(  'static'               ,  4 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
     # Label(  'dynamic'              ,  5 ,      255 , 'void'            , 0       , False        , True         , (111, 74,  0) ),
     # Label(  'ground'               ,  6 ,      255 , 'void'            , 0       , False        , True         , ( 81,  0, 81) ),
-    Label(  'road'                 ,  11 ,        0 , 'flat'            , 1       , False        , False        , (128, 64,128) ),
-    Label(  'sidewalk'             ,  12 ,        1 , 'flat'            , 1       , False        , False        , (244, 35,232) ),
+    Label(  'road'                 ,  1 ,        0 , 'flat'            , 1       , False        , False        , (128, 64,128) ),
+    Label(  'sidewalk'             ,  2 ,        1 , 'flat'            , 1       , False        , False        , (244, 35,232) ),
     # Label(  'parking'              ,  9 ,      255 , 'flat'            , 1       , False        , True         , (250,170,160) ),
     # Label(  'rail track'           , 10 ,      255 , 'flat'            , 1       , False        , True         , (230,150,140) ),
     # Label(  'building'             , 11 ,        2 , 'construction'    , 2       , False        , False        , ( 70, 70, 70) ),
@@ -124,20 +124,21 @@ labels = [
     # Label(  'vegetation'           , 21 ,        8 , 'nature'          , 4       , False        , False        , (107,142, 35) ),
     # Label(  'terrain'              , 22 ,        9 , 'nature'          , 4       , False        , False        , (152,251,152) ),
     # Label(  'sky'                  , 23 ,       10 , 'sky'             , 5       , False        , False        , ( 70,130,180) ),
-    Label(  'person'               , 1 ,       11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
-    Label(  'rider'                , 2 ,       12 , 'human'           , 6       , True         , False        , (255,  0,  0) ),
-    Label(  'car'                  , 3 ,       13 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
-    Label(  'truck'                , 4 ,       14 , 'vehicle'         , 7       , True         , False        , (  0,  0, 70) ),
-    Label(  'bus'                  , 5 ,       15 , 'vehicle'         , 7       , True         , False        , (  0, 60,100) ),
-    Label(  'caravan'              , 6 ,      255 , 'vehicle'         , 7       , True         , True         , (  0,  0, 90) ),
-    Label(  'trailer'              , 7 ,      255 , 'vehicle'         , 7       , True         , True         , (  0,  0,110) ),
-    Label(  'train'                , 8 ,       16 , 'vehicle'         , 7       , True         , False        , (  0, 80,100) ),
-    Label(  'motorcycle'           , 9 ,       17 , 'vehicle'         , 7       , True         , False        , (  0,  0,230) ),
-    Label(  'bicycle'              , 10 ,       18 , 'vehicle'         , 7       , True         , False        , (119, 11, 32) ),
+    Label(  'person'               , 3 ,       11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
+    Label(  'rider'                , 4 ,       12 , 'human'           , 6       , True         , False        , (255,  0,  0) ),
+    Label(  'car'                  , 5 ,       13 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
+    Label(  'truck'                , 6 ,       14 , 'vehicle'         , 7       , True         , False        , (  0,  0, 70) ),
+    Label(  'bus'                  , 7 ,       15 , 'vehicle'         , 7       , True         , False        , (  0, 60,100) ),
+    Label(  'caravan'              , 8 ,      255 , 'vehicle'         , 7       , True         , True         , (  0,  0, 90) ),
+    Label(  'trailer'              , 9 ,      255 , 'vehicle'         , 7       , True         , True         , (  0,  0,110) ),
+    Label(  'train'                , 10 ,       16 , 'vehicle'         , 7       , True         , False        , (  0, 80,100) ),
+    Label(  'motorcycle'           , 11 ,       17 , 'vehicle'         , 7       , True         , False        , (  0,  0,230) ),
+    Label(  'bicycle'              , 12 ,       18 , 'vehicle'         , 7       , True         , False        , (119, 11, 32) ),
     # Label(  'license plate'        , -1 ,       -1 , 'vehicle'         , 7       , False        , True         , (  0,  0,142) ),
 ]
 
 
+class_names = ['road', 'sidewalk', 'person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle']
 
 #--------------------------------------------------------------------------------
 # Create dictionaries for a fast lookup

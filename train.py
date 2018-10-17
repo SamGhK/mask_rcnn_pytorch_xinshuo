@@ -107,14 +107,6 @@ if __name__ == '__main__':
         model.train_model(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE, num_epochs=120, layers='4+')
         print_log("Fine tune all layers", model.log_file)
         model.train_model(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE / 10, num_epochs=160, layers='all')
-    # elif args.command == "evaluate":
-    #     # Validation dataset
-    #     dataset_val = CocoDataset()
-    #     coco = dataset_val.load_data(args.dataset, "minival", year=args.year, return_coco=True, auto_download=args.download)
-    #     dataset_val.prepare()
-    #     print_log("Running COCO evaluation on {} images.".format(args.limit), model.log_file)
-    #     evaluate_coco(model, dataset_val, coco, "bbox", limit=int(args.limit))
-    #     evaluate_coco(model, dataset_val, coco, "segm", limit=int(args.limit))
     else: print_log("'{}' is not recognized. " "Use 'train' or 'evaluate'".format(args.command), model.log_file)
 
     model.log_file.close()
