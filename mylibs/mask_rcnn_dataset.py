@@ -45,6 +45,7 @@ def load_image_gt(dataset, config, image_id, augment=False, use_mini_mask=False)
             mask = np.fliplr(mask)
 
     # Bounding boxes. Note that some boxes might be all zeros if the corresponding mask got cropped out.
+    # bbox = bboxes_from_mask(mask)                           # (num_instances x 4)
     bbox = bboxes_from_mask(mask)                           # (num_instances x 4)
     # TODO, make sure all boxes are bigger than 0, some masks might be small 
 

@@ -1,13 +1,16 @@
 # Author: Xinshuo Weng
 # email: xinshuo.weng@gmail.com
 
-import os, coco, torch, numpy as np, matplotlib.pyplot as plt
+import os, torch, numpy as np, matplotlib.pyplot as plt
+from config import Config
 if "DISPLAY" not in os.environ: plt.switch_backend('agg')
 from mylibs import MaskRCNN
 from xinshuo_io import load_list_from_folder, fileparts, mkdir_if_missing, load_image, save_image
 from xinshuo_visualization import visualize_image_with_bbox_mask
 from xinshuo_visualization.python.private import save_vis_close_helper
 from xinshuo_miscellaneous import convert_secs2time, Timer
+
+dataset = 'cityscape'
 
 def class_mapping_coco_to_kitti(class_id):
 	if class_id in [1]:
@@ -18,28 +21,45 @@ def class_mapping_coco_to_kitti(class_id):
 		return 2		# car
 	else: return 0
 
-class InferenceConfig(coco.CocoConfig):
-	# Set batch size to 1 since we'll be running inference on
-	# one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
-	# GPU_COUNT = 0 for CPU
-	GPU_COUNT = 1
-	IMAGES_PER_GPU = 1
+def class_mapping_cityscape_to_kitti(class_id):
+	if class_id in [3]:
+		return 1		# pedestrian
+	elif class_id in [4]:
+		return 3		# cyclist
+	elif class_id in [5]:
+		return 2		# car
+	else: return 0
+
+class InferenceConfig(Config):
+    # Set batch size to 1 since we'll be running inference on
+    # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
+    NAME = 'evaluate_%s' % dataset
+    GPU_COUNT = 1
+    IMAGES_PER_GPU = 1
+    DETECTION_MIN_CONFIDENCE = 0
+    if dataset == 'coco': NUM_CLASSES = 1 + 80
+    else: NUM_CLASSES = 1 + 12
+
+config = InferenceConfig()
 
 root_dir = os.getcwd()                      # Root directory of the project
 log_dir = os.path.join(root_dir, 'logs')    # Directory to save logs and trained model
 
 
 # model_path = os.path.join(root_dir, 'resnet50_imagenet.pth')    # Path to trained weights file
-model_path = os.path.join(root_dir, 'mask_rcnn_coco.pth')    # Path to trained weights file
+# model_path = os.path.join(root_dir, 'mask_rcnn_coco.pth')    # Path to trained weights file
 # model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/coco20181015T1656/mask_rcnn_coco_0160.pth'
 # model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/coco20181015T1653/mask_rcnn_coco_0160.pth'
+model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/cityscape20181016T2338/mask_rcnn_cityscape_0005.pth'
 
-images_dir = os.path.join(root_dir, 'images')    # Directory of images to run detection on
-save_dir = os.path.join(root_dir, 'tmp/results'); mkdir_if_missing(save_dir)
+# images_dir = os.path.join(root_dir, 'images')    # Directory of images to run detection on
+# save_dir = os.path.join(root_dir, 'tmp/results'); mkdir_if_missing(save_dir)
 
 # data_dir = '/media/xinshuo/Data/Datasets/KITTI/object/training'
 # images_dir = os.path.join(data_dir, 'image_2')
-# save_dir = os.path.join(data_dir, 'results/mask_preprocessed'); mkdir_if_missing(save_dir)
+data_dir = '/media/xinshuo/Data/Datasets/Cityscapes/leftImg8bit'
+images_dir = os.path.join(data_dir, 'val/frankfurt')
+save_dir = os.path.join(data_dir, 'results/mask_preprocessed_cityscape'); mkdir_if_missing(save_dir)
 
 vis_dir = os.path.join(save_dir, 'visualization'); mkdir_if_missing(vis_dir)
 mask_dir = os.path.join(save_dir, 'masks'); mkdir_if_missing(mask_dir)
@@ -56,23 +76,25 @@ model.load_weights(model_path)    # Load weights trained on MS-COCO
 # COCO Class names
 # Index of the class in the list is its ID. For example, to get ID of
 # the teddy bear class, use: class_names.index('teddy bear')
-class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
-               'bus', 'train', 'truck', 'boat', 'traffic light',
-               'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird',
-               'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear',
-               'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie',
-               'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball',
-               'kite', 'baseball bat', 'baseball glove', 'skateboard',
-               'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup',
-               'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
-               'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza',
-               'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed',
-               'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote',
-               'keyboard', 'cell phone', 'microwave', 'oven', 'toaster',
-               'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
-               'teddy bear', 'hair drier', 'toothbrush']
 # class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
-#                'bus', 'train', 'truck']
+#                'bus', 'train', 'truck', 'boat', 'traffic light',
+#                'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird',
+#                'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear',
+#                'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie',
+#                'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball',
+#                'kite', 'baseball bat', 'baseball glove', 'skateboard',
+#                'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup',
+#                'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
+#                'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza',
+#                'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed',
+#                'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote',
+#                'keyboard', 'cell phone', 'microwave', 'oven', 'toaster',
+#                'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
+#                'teddy bear', 'hair drier', 'toothbrush']
+
+
+class_names = ['BG', 'road', 'sidewalk', 'person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle']
+
 
 # load the data
 image_list, num_list = load_list_from_folder(images_dir)
@@ -107,7 +129,10 @@ for image_file_tmp in image_list:
 	for instance_index in range(num_instances):
 		mask_tmp = r['masks'][:, :, instance_index]
 		class_tmp = r['class_ids'][instance_index]
-		class_tmp = class_mapping_coco_to_kitti(class_tmp)
+
+		if dataset == 'coco': class_tmp = class_mapping_coco_to_kitti(class_tmp)
+		elif dataset == 'cityscape': class_tmp = class_mapping_cityscape_to_kitti(class_tmp)
+		else: assert False, 'error'
 		score_tmp = r['scores'][instance_index]
 		
 		mask_tmp *= 255
