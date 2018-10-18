@@ -29,7 +29,7 @@ class CityscapeConfig(Config):
     """
     NAME = "cityscape"          # Give the configuration a recognizable name
     IMAGES_PER_GPU = 1
-    NUM_CLASSES = 1 + 12        # Number of classes (including background)
+    NUM_CLASSES = 1 + len(class_names)        # Number of classes (including background)
 
 ############################################################
 #  Dataset Loader

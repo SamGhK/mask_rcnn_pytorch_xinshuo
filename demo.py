@@ -50,15 +50,15 @@ log_dir = os.path.join(root_dir, 'logs')    # Directory to save logs and trained
 # model_path = os.path.join(root_dir, 'mask_rcnn_coco.pth')    # Path to trained weights file
 # model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/coco20181015T1656/mask_rcnn_coco_0160.pth'
 # model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/coco20181015T1653/mask_rcnn_coco_0160.pth'
-model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/cityscape20181016T2338/mask_rcnn_cityscape_0005.pth'
+model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/cityscape20181017T0839/mask_rcnn_cityscape_0060.pth'
 
 # images_dir = os.path.join(root_dir, 'images')    # Directory of images to run detection on
 # save_dir = os.path.join(root_dir, 'tmp/results'); mkdir_if_missing(save_dir)
 
-# data_dir = '/media/xinshuo/Data/Datasets/KITTI/object/training'
-# images_dir = os.path.join(data_dir, 'image_2')
-data_dir = '/media/xinshuo/Data/Datasets/Cityscapes/leftImg8bit'
-images_dir = os.path.join(data_dir, 'val/frankfurt')
+data_dir = '/media/xinshuo/Data/Datasets/KITTI/object/training'
+images_dir = os.path.join(data_dir, 'image_2')
+# data_dir = '/media/xinshuo/Data/Datasets/Cityscapes/leftImg8bit'
+# images_dir = os.path.join(data_dir, 'val/frankfurt')
 save_dir = os.path.join(data_dir, 'results/mask_preprocessed_cityscape'); mkdir_if_missing(save_dir)
 
 vis_dir = os.path.join(save_dir, 'visualization'); mkdir_if_missing(vis_dir)

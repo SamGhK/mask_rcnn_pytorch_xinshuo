@@ -10,9 +10,10 @@ from xinshuo_io import save_image, mkdir_if_missing
 dataset_dir = '/media/xinshuo/Data/Datasets/Cityscapes'
 # year = '2014'
 # download = False
+gttype='gtFine'
 
 config = CityscapeConfig()
-dataset_cityscape = CityScapeDataset(dataset_dir, split='val', gttype='gtFine')
+dataset_cityscape = CityScapeDataset(dataset_dir, split='val', gttype=gttype)
 # dataset_cityscape.load_data(class_ids=[11, 12, 13])
 # dataset_cityscape.load_data(class_ids=[11])
 dataset_cityscape.load_data()
@@ -42,7 +43,7 @@ train_set = Mask_RCNN_Dataset(dataset_cityscape, config, augment=True)
 train_generator = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=False, num_workers=4, pin_memory=True)
 
 count = 1
-vis_dir = '/media/xinshuo/Data/Datasets/Cityscapes/gtFine/vis_val'; mkdir_if_missing(vis_dir)
+vis_dir = '/media/xinshuo/Data/Datasets/Cityscapes/%s/vis_val' % gttype; mkdir_if_missing(vis_dir)
 for images, image_metas, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks, image_index, filename in train_generator:
 	# print()
 	print('processing %d' % count)

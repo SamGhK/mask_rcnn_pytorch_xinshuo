@@ -3,7 +3,7 @@
 
 import argparse, os, torch, random
 from config import Config
-from mylibs import MaskRCNN
+from mylibs import MaskRCNN, class_names
 from coco import CocoConfig, CocoDataset, evaluate_coco
 from cityscape import CityscapeConfig, CityScapeDataset
 from xinshuo_miscellaneous import print_log
@@ -53,7 +53,7 @@ if __name__ == '__main__':
             IMAGES_PER_GPU = 1
             DETECTION_MIN_CONFIDENCE = 0
             if args.dataset == 'coco': NUM_CLASSES = 1 + 80
-            else: NUM_CLASSES = 1 + 12
+            else: NUM_CLASSES = 1 + len(class_names)
 
         config = InferenceConfig()
 
