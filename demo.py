@@ -112,9 +112,9 @@ for image_file_tmp in image_list:
 	# visualize and save results
 	r = results[0]			# results from the first image
 	num_instances = r['masks'].shape[-1]
-	fig, _ = visualize_image_with_bbox_mask(image, boxes=r['rois'], masks=r['masks'], class_ids=r['class_ids'], class_names=class_names_bg, scores=r['scores'])
+	# fig, _ = visualize_image_with_bbox_mask(image, boxes=r['rois'], masks=r['masks'], class_ids=r['class_ids'], class_names=class_names_bg, scores=r['scores'])
 	save_path_tmp = os.path.join(vis_dir, filename+'.jpg')
-	save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)
+	# save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)
 
 	elapsed = timer.toc(average=False)
 	remaining_str = convert_secs2time((elapsed) / count * (num_list - count))
@@ -126,8 +126,6 @@ for image_file_tmp in image_list:
 		mask_tmp = r['masks'][:, :, instance_index]
 		class_tmp = r['class_ids'][instance_index]
 		bbox_tmp = r['rois'][instance_index, :]		# y1, x1, y2, x2
-		# print(bbox_tmp.shape)
-		# zxc
 
 		if dataset == 'coco': class_tmp = class_mapping_coco_to_kitti(class_tmp)
 		elif dataset == 'cityscape': class_tmp = class_mapping_cityscape_to_kitti(class_tmp)
@@ -138,13 +136,13 @@ for image_file_tmp in image_list:
 		mask_tmp *= 255
 		mask_dir_frame = os.path.join(mask_dir, filename); mkdir_if_missing(mask_dir_frame)
 		save_path_tmp = os.path.join(mask_dir_frame, 'instance_%04d'%instance_index+'.jpg')		
-		save_image(mask_tmp, save_path=save_path_tmp)
+		# save_image(mask_tmp, save_path=save_path_tmp)
 		
 		# save info for every instances
-		save_str = '%s %s %s %s\n' % (image_file_tmp, class_tmp, score_tmp, save_path_tmp)
+		save_str = '%s %s %.2f %.2f %.2f %.2f %.2f %s \n' % (image_file_tmp, class_tmp, bbox_tmp[0], bbox_tmp[1], bbox_tmp[2], bbox_tmp[3], score_tmp, save_path_tmp)
 		detection_results_file.write(save_str)
 
-		label_matching_str = '%s %.2f %.2f %.2f %.2f %s %s\n' % (KITTI_class_mapping[class_tmp], bbox_tmp[0], bbox_tmp[1], bbox_tmp[2], bbox_tmp[3], score_tmp, save_path_tmp)
+		label_matching_str = '%s %.2f %.2f %.2f %.2f %.2f %s\n' % (KITTI_class_mapping[class_tmp], bbox_tmp[0], bbox_tmp[1], bbox_tmp[2], bbox_tmp[3], score_tmp, save_path_tmp)
 		label_matching_file_tmp.write(label_matching_str)
 
 	count += 1
