@@ -19,8 +19,6 @@ except:
     print("Failed to import the image processing packages.")
     sys.exit(-1)
 
-# ignore_id_list = [0, 1, 2, 3, 4, -1]
-
 ############################################################
 #  Configurations
 ############################################################

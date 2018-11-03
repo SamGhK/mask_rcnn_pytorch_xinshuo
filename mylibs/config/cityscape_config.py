@@ -223,7 +223,7 @@ labels = [
 
 # class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle']
 # class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle', 'traffic light', 'traffic sign', 'vegetation']
-class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle', 'traffic light', 'traffic sign', 
+cityscape_class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle', 'traffic light', 'traffic sign', 
     'vegetation', 'building', 'wall', 'fence', 'guard rail', 'fence', 'guard rail', 'bridge', 'tunnel', 'terrain', 'sky']
 # class_names = ['road', 'sidewalk', 'person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle']
 
@@ -234,8 +234,8 @@ class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', '
 # Please refer to the main method below for example usages!
 
 # name to label object
-name2label      = { label.name    : label for label in labels           }
+cityscape_name2label      = { label.name    : label for label in labels           }
 # id to label object
-id2label        = { label.id      : label for label in labels           }
+cityscape_id2label        = { label.id      : label for label in labels           }
 # trainId to label object
 # trainId2label   = { label.trainId : label for label in reversed(labels) }

@@ -9,28 +9,22 @@ from cityscape import CityscapeConfig, CityScapeDataset
 from xinshuo_miscellaneous import print_log
 
 torch.backends.cudnn.enabled = True
-ROOT_DIR = os.getcwd()      # Root directory of the project
-# COCO_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.pth")      # Path to trained weights file
-
 save_dir = '/media/xinshuo/Data/models/mask_rcnn_pytorch'
-# DEFAULT_LOGS_DIR = os.path.join(save_dir, "logs")       # Directory to save logs and model checkpoints, if not provided
 DEFAULT_DATASET_YEAR = "2014"
-# DATASET = 'coco'
+
 ############################################################
 #  Training
 ############################################################
 if __name__ == '__main__':
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Train Mask R-CNN on MS COCO.')
-    parser.add_argument("command", metavar="<command>", help="'train' or 'evaluate' on MS COCO")
-    parser.add_argument('--dataset', required=True, type=str, default='cityscapes', help='dataset name')
-    parser.add_argument('--data_dir', required=True, type=str, default='/path/to/cityscapes', help='Directory of the dataset')
-    parser.add_argument('--year', required=False, default=DEFAULT_DATASET_YEAR, metavar="<year>", help='Year of the MS-COCO dataset (2014 or 2017) (default=2014)')
-    parser.add_argument('--model', required=False, metavar="/path/to/weights.pth", help="Path to weights .pth file or 'coco'")
-    parser.add_argument('--save_dir', required=False, default=save_dir, metavar="/path/to/logs/", help='Logs and checkpoints directory (default=logs/)')
-    parser.add_argument('--limit', required=False, default=500, metavar="<image count>", help='Images to use for evaluation (default=500)')
-    parser.add_argument('--download', required=False, default=False, type=bool, metavar="<True|False>", help='Automatically download and unzip MS-COCO files (default=False)')
-    parser.add_argument('--manualSeed', required=False, type=int, default=2345, help='seed')
+    parser.add_argument("command",                          metavar="<command>", help="'train' or 'evaluate' on MS COCO")
+    parser.add_argument('--dataset',    required=True,      type=str, default='cityscapes', help='dataset name')
+    parser.add_argument('--data_dir',   required=True,      type=str, default='/path/to/cityscapes', help='Directory of the dataset')
+    parser.add_argument('--year',       required=False,     default='2014', metavar="<year>", help='Year of the MS-COCO dataset (2014 or 2017) (default=2014)')
+    parser.add_argument('--model',      required=False,     metavar="/path/to/weights.pth", help="Path to weights .pth file or 'coco'")
+    parser.add_argument('--save_dir',   required=False,     default=save_dir, metavar="/path/to/logs/", help='Logs and checkpoints directory (default=logs/)')
+    parser.add_argument('--manualSeed', required=False,     type=int, default=2345, help='seed')
     args = parser.parse_args()
 
     # Prepare options

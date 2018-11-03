@@ -2,9 +2,8 @@
 # email: xinshuo.weng@gmail.com
 
 import os, torch, numpy as np, matplotlib.pyplot as plt
-from config import Config
 if "DISPLAY" not in os.environ: plt.switch_backend('agg')
-from mylibs import MaskRCNN, class_names
+from mylibs import MaskRCNN, class_names, Config
 from xinshuo_io import load_list_from_folder, fileparts, mkdir_if_missing, load_image, save_image
 from xinshuo_visualization import visualize_image_with_bbox_mask
 from xinshuo_visualization.python.private import save_vis_close_helper

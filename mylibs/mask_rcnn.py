@@ -604,8 +604,8 @@ class MaskRCNN(nn.Module):
         molded_images, image_metas, windows = self.mold_inputs(images)      # Mold inputs to format expected by the neural network
         molded_images = torch.from_numpy(molded_images.transpose(0, 3, 1, 2)).float()   # Convert images to torch tensor
         if self.config.GPU_COUNT: molded_images = molded_images.cuda()
-        molded_images = Variable(molded_images, volatile=True)      # Wrap in variable
-        detections, mrcnn_mask = self.predict([molded_images, image_metas], mode='inference')       # Run object detection
+        molded_images = Variable(molded_images)      # Wrap in variable
+        with torch.no_grad(): detections, mrcnn_mask = self.predict([molded_images, image_metas], mode='inference')       # Run object detection
         
         if detections.size()[0]:
             detections = detections.data.cpu().numpy()      # Convert to numpy
@@ -838,12 +838,12 @@ class MaskRCNN(nn.Module):
             printProgressBar(step + 1, num_steps, log=self.log_file, prefix="\t{}/{}".format(step + 1, num_steps), suffix='index: {:5d}, filename: {:40s}'.format(image_index.item(), filename[0]), length=10)
 
             image_metas = image_metas.numpy()
-            images, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks = Variable(images, volatile=True), Variable(rpn_match, volatile=True), Variable(rpn_bbox, volatile=True), Variable(gt_class_ids, volatile=True), Variable(gt_boxes, volatile=True), Variable(gt_masks, volatile=True)
-            if self.config.GPU_COUNT: images, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks = images.cuda(), rpn_match.cuda(), rpn_bbox.cuda(), gt_class_ids.cuda(), gt_boxes.cuda(), gt_masks.cuda()
 
-            # Run object detection
-            rpn_class_logits, rpn_pred_bbox, target_class_ids, mrcnn_class_logits, target_deltas, mrcnn_bbox, target_mask, mrcnn_mask = \
-                self.predict([images, image_metas, gt_class_ids, gt_boxes, gt_masks], mode='training')
+            with torch.no_grad():
+                images, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks = Variable(images), Variable(rpn_match), Variable(rpn_bbox), Variable(gt_class_ids), Variable(gt_boxes), Variable(gt_masks)
+                if self.config.GPU_COUNT: images, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks = images.cuda(), rpn_match.cuda(), rpn_bbox.cuda(), gt_class_ids.cuda(), gt_boxes.cuda(), gt_masks.cuda()
+                rpn_class_logits, rpn_pred_bbox, target_class_ids, mrcnn_class_logits, target_deltas, mrcnn_bbox, target_mask, mrcnn_mask = \
+                    self.predict([images, image_metas, gt_class_ids, gt_boxes, gt_masks], mode='training')
 
             if not target_class_ids.size(): continue
 
