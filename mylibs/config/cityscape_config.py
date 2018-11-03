@@ -181,18 +181,6 @@ Label = namedtuple( 'Label' , [
 
 labels = [
     #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
-    # Label(  'unlabeled'            ,  0 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-    # Label(  'ego vehicle'          ,  1 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-    # Label(  'rectification border' ,  2 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-    # Label(  'out of roi'           ,  3 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-    # Label(  'static'               ,  4 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-    # Label(  'dynamic'              ,  5 ,      255 , 'void'            , 0       , False        , True         , (111, 74,  0) ),
-    # Label(  'ground'               ,  6 ,      255 , 'void'            , 0       , False        , True         , ( 81,  0, 81) ),
-    # Label(  'road'                 ,  1 ,        0 , 'flat'            , 1       , False        , False        , (128, 64,128) ),
-    # Label(  'sidewalk'             ,  2 ,        1 , 'flat'            , 1       , False        , False        , (244, 35,232) ),
-    # Label(  'parking'              ,  9 ,      255 , 'flat'            , 1       , False        , True         , (250,170,160) ),
-    # Label(  'rail track'           , 10 ,      255 , 'flat'            , 1       , False        , True         , (230,150,140) ),
-
     Label(  'person'               , 1 ,       11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
     Label(  'rider'                , 2 ,       12 , 'human'           , 6       , True         , False        , (255,  0,  0) ),
     Label(  'car'                  , 3 ,       13 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
@@ -227,15 +215,14 @@ cityscape_class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 't
     'vegetation', 'building', 'wall', 'fence', 'guard rail', 'fence', 'guard rail', 'bridge', 'tunnel', 'terrain', 'sky']
 # class_names = ['road', 'sidewalk', 'person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle']
 
-#--------------------------------------------------------------------------------
-# Create dictionaries for a fast lookup
-#--------------------------------------------------------------------------------
+cityscape_name2label = { label.name: label for label in labels}     # name to label object
+cityscape_id2label   = { label.id  : label for label in labels}    # id to label object
 
-# Please refer to the main method below for example usages!
-
-# name to label object
-cityscape_name2label      = { label.name    : label for label in labels           }
-# id to label object
-cityscape_id2label        = { label.id      : label for label in labels           }
-# trainId to label object
-# trainId2label   = { label.trainId : label for label in reversed(labels) }
+def class_mapping_cityscape_to_kitti(class_id):
+    if class_id in [1]:
+        return 1        # pedestrian
+    elif class_id in [2]:
+        return 3        # cyclist
+    elif class_id in [3]:
+        return 2        # car
+    else: return 0
