@@ -24,7 +24,7 @@ class Config(object):
     NAME = None  # Override in sub-classes
 
     # Path to pretrained imagenet model
-    IMAGENET_MODEL_PATH = os.path.join(os.getcwd(), "resnet50_imagenet.pth")
+    IMAGENET_MODEL_PATH = os.path.join(os.getcwd(), 'models', 'resnet50_imagenet.pth')
 
     # NUMBER OF GPUs to use. For CPU use 0
     GPU_COUNT = 1
@@ -132,11 +132,11 @@ class Config(object):
     # The Mask RCNN paper uses lr=0.02, but on TensorFlow it causes
     # weights to explode. Likely due to differences in optimzer
     # implementation.
-    LEARNING_RATE = 0.001
+    LEARNING_RATE = 0.0001
     LEARNING_MOMENTUM = 0.9
 
     # Weight decay regularization
-    WEIGHT_DECAY = 0.0001
+    WEIGHT_DECAY = 0.00001
 
     # Use RPN ROIs or externally generated ROIs for training
     # Keep this True for most situations. Set to False if you want to train

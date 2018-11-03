@@ -1,15 +1,13 @@
 # Author: Xinshuo Weng
 # email: xinshuo.weng@gmail.com
 import os, time, numpy as np, zipfile, urllib.request, shutil
-from mylibs import General_Dataset
+from mylibs import General_Dataset, Config
 
 # Download and install the Python COCO tools from https://github.com/waleedka/coco
 # That's a fork from the original https://github.com/pdollar/coco with a bug fix for Python 3.
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from pycocotools import mask as maskUtils
-from config import Config
-
 from xinshuo_io import mkdir_if_missing
 from xinshuo_miscellaneous import is_path_exists
 
@@ -27,21 +25,21 @@ class CocoConfig(Config):
 #  Dataset
 ############################################################
 class CocoDataset(General_Dataset):
-    def load_data(self, dataset_dir, subset, year='2014', class_ids=None, return_coco=False, auto_download=False):
+    def load_data(self, dataset_dir, split, year='2014', class_ids=None, return_coco=False, auto_download=False):
         """Load a subset of the COCO dataset.
         dataset_dir: The root directory of the datasets.
-        subset: What to load (train, val, minival, valminusminival)
+        split: What to load (train, val, minival, valminusminival)
         year: What dataset year to load (2014, 2017) as a string, not an integer
         class_ids: If provided, only loads images that have the given classes.
         return_coco: If True, returns the COCO object.
         auto_download: Automatically download and unzip MS-COCO images and annotations
         """
-        if auto_download is True: self.auto_download(dataset_dir, subset, year)
-        if subset == 'minival' or subset == 'valminusminival': subset = 'val'
-        coco = COCO('{}/annotations/instances_{}{}.json'.format(dataset_dir, subset, year))
-        image_dir = os.path.join(dataset_dir, '{}{}'.format(subset, year))        
+        if auto_download is True: self.auto_download(dataset_dir, split, year)
+        if subset == 'minival' or subset == 'valminusminival': split = 'val'
+        coco = COCO('{}/annotations/instances_{}{}.json'.format(dataset_dir, split, year))
+        image_dir = os.path.join(dataset_dir, '{}{}'.format(split, year))        
 
-        # All images or a subset containing the requested ID. Duplicated images are removed
+        # All images or a split containing the requested ID. Duplicated images are removed
         if class_ids:
             image_ids = []
             for id in class_ids: image_ids.extend(list(coco.getImgIds(catIds=[id])))

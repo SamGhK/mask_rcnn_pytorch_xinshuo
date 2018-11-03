@@ -4,9 +4,7 @@
 # CityScape dataset loader
 
 import os, time, numpy as np, copy
-from cityscapesscripts.helpers.annotation import Annotation
-from mylibs import General_Dataset, id2label, name2label, class_names
-from config import Config
+from mylibs import General_Dataset, cityscape_id2label, cityscape_name2label, cityscape_class_names, Config, CityScapeAnnotation
 from xinshuo_io import mkdir_if_missing, fileparts, load_list_from_folder
 from xinshuo_math import bboxes_from_mask
 from xinshuo_miscellaneous import is_path_exists, islist, find_unique_common_from_lists
@@ -25,9 +23,9 @@ except:
 class CityscapeConfig(Config):
     """Configuration for training on CityScape.
     """
-    NAME = "cityscape"          # Give the configuration a recognizable name
+    NAME = 'cityscape'          # Give the configuration a recognizable name
     IMAGES_PER_GPU = 1
-    NUM_CLASSES = 1 + len(class_names)        # Number of classes (including background)
+    NUM_CLASSES = 1 + len(cityscape_class_names)        # Number of classes (including background)
 
 ############################################################
 #  Dataset Loader
@@ -84,7 +82,7 @@ class CityScapeDataset(General_Dataset):
         for anno_tmp in anno_list:
             _, filename, _ = fileparts(anno_tmp)
             image_id = filename.split('_gt')[0]
-            anno_data = Annotation()
+            anno_data = CityScapeAnnotation()
             anno_data.fromJsonFile(anno_tmp)
             obj_type_list = []
             for obj in anno_data.objects:
@@ -96,13 +94,13 @@ class CityScapeDataset(General_Dataset):
                 # also we know that this polygon describes a group
                 # TODO: ?????? what is the group
                 isGroup = False
-                if (not label in name2label) and label.endswith('group'):
+                if (not label in cityscape_name2label) and label.endswith('group'):
                     label = label[:-len('group')]
                     isGroup = True
-                if not label in name2label:
+                if not label in cityscape_name2label:
                     # printError('Label {} not known.'.format(label))
                     continue
-                labelTuple = name2label[label]          # the label tuple
+                labelTuple = cityscape_name2label[label]          # the label tuple
 
                 # get the class ID
                 if encoding == 'ids': id_tmp = labelTuple.id
@@ -137,13 +135,13 @@ class CityScapeDataset(General_Dataset):
             image_ids = list(set(image_ids))        # Remove `1duplicates
         else: 
             print('loading all data')
-            class_ids = sorted(id2label.keys())    
+            class_ids = sorted(cityscape_id2label.keys())    
             image_ids = sorted(self.images_dict.keys())  # All images
             # print(image_ids[0: 5])
         print('number of images for the requested id added to the dataset is %d' % len(image_ids))
 
         # add all images and classes into the dataset
-        for id_tmp in class_ids: self.add_class('cityscape', id_tmp, id2label[id_tmp].name)          # Add classes
+        for id_tmp in class_ids: self.add_class('cityscape', id_tmp, cityscape_id2label[id_tmp].name)          # Add classes
         for id_tmp in image_ids:             # Add images
             city_tmp = id_tmp.split('_')[0]
             self.add_image('cityscape', image_id=id_tmp, path=os.path.join(self.image_dir, city_tmp, id_tmp+'_leftImg8bit.png'), width=self.images_dict[id_tmp]['width'], 
@@ -180,13 +178,13 @@ class CityScapeDataset(General_Dataset):
             masks:                  A uint8 array of shape [height, width, num_instances] with one mask per instance.
             class_ids:              a 1D int32 array of class IDs of the instance masks.
         '''
-        anno_data = Annotation()
+        anno_data = CityScapeAnnotation()
         anno_data.fromJsonFile(annotation_file)
         size = (anno_data.imgWidth, anno_data.imgHeight)          # the size of the image
 
         # the background
-        # if encoding == 'ids': backgroundId = name2label['unlabeled'].id
-        # elif encoding == 'trainIds': backgroundId = name2label['unlabeled'].trainId
+        # if encoding == 'ids': backgroundId = cityscape_name2label['unlabeled'].id
+        # elif encoding == 'trainIds': backgroundId = cityscape_name2label['unlabeled'].trainId
         # else:
             # print("Unknown encoding '{}'".format(encoding))
             # return None
@@ -204,13 +202,13 @@ class CityScapeDataset(General_Dataset):
             # also we know that this polygon describes a group
             # TODO: ?????? what is the group
             isGroup = False
-            if (not label in name2label) and label.endswith('group'):
+            if (not label in cityscape_name2label) and label.endswith('group'):
                 label = label[:-len('group')]
                 isGroup = True
-            if not label in name2label: 
+            if not label in cityscape_name2label: 
                 # printError( "Label '{}' not known.".format(label) )
                 continue
-            labelTuple = name2label[label]          # the label tuple
+            labelTuple = cityscape_name2label[label]          # the label tuple
 
             # get the class ID
             if encoding == "ids": id_tmp = labelTuple.id
@@ -241,15 +239,7 @@ class CityScapeDataset(General_Dataset):
         image = self.load_image(image_index)
 
         masks, class_ids = self.load_mask(image_index)
-        bbox = bboxes_from_mask(masks)                           # (num_instances x 4)
-
-        # print(type(name2label))
-        # print(type(name2label.keys()))
-        # print(type(name2label.keys().tolist()))
-        # zxc
-        # class_names = ['BG'] + class_names
-        # print(class_names)
-        # zxc
+        bbox = bboxes_from_mask(masks)                           # TLBR format, N x 4
         fig, _ = visualize_image_with_bbox_mask(image, boxes=bbox, masks=masks, class_ids=class_ids, class_names=['BG'] + class_names)
         save_path_tmp = os.path.join(save_dir, filename+'.jpg')
         save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)

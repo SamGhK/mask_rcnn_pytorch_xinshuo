@@ -8,7 +8,8 @@ from xinshuo_visualization import visualize_image_with_bbox_mask
 from xinshuo_visualization.python.private import save_vis_close_helper
 from xinshuo_miscellaneous import convert_secs2time, Timer, get_timestring, print_log
 
-train_dataset = 'coco'
+train_dataset = 'cityscape'
+epoch = 60
 object_interest = {1: 'Pedestrian', 2: 'Car', 3: 'Cyclist'}
 data_dir = '/media/xinshuo/Data/Datasets/KITTI/object/training'
 results_name = 'maskrcnn_bbox_detection_results_%s_%s' % (train_dataset, get_timestring())
@@ -40,9 +41,9 @@ label_bbox_match_dir = os.path.join(save_dir, 'label_bbox_matching'); mkdir_if_m
 detection_result_filepath = os.path.join(save_dir, 'mask_results.txt'); detection_results_file = open(detection_result_filepath, 'w')
 
 ##--------------------------------- Model Directory ----------------------------------##
-# model_path = os.path.join(root_dir, 'resnet50_imagenet.pth')    		# Path to trained weights from Imagenet
-model_path = os.path.join(root_dir, '../models/mask_rcnn_coco.pth')    			# Path to trained weights file
-# model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/cityscape20181018T0035/mask_rcnn_cityscape_0060.pth'
+if train_dataset == 'coco': model_path = os.path.join(root_dir, '../models/mask_rcnn_coco.pth')    			# Path to trained weights file
+elif train_dataset == 'cityscape': model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/cityscape20181018T0035/mask_rcnn_cityscape_%04d.pth' % epoch
+else: model_path = os.path.join(root_dir, 'resnet50_imagenet.pth')    		# Path to trained weights from Imagenet
 model = MaskRCNN(model_dir=save_dir, config=config)			# Create model object.
 if config.GPU_COUNT: model = model.cuda()
 model.load_weights(model_path)    # Load weights 
@@ -82,7 +83,7 @@ for image_file_tmp in image_list:
 	elapsed = timer.toc(average=False)
 	remaining_str = convert_secs2time((elapsed) / count * (num_list - count))
 	elapsed_str = convert_secs2time(elapsed)
-	print_str = 'KITTI Evaluation: testing %d/%d, detected %d instances, EP: %s, ETA: %s' % (count, num_list, num_instances, elapsed_str, remaining_str)
+	print_str = 'KITTI Eval: trained on %s, %d/%d, detected %d items, EP: %s, ETA: %s' % (train_dataset, count, num_list, num_instances, elapsed_str, remaining_str)
 	print(print_str)
 	print_log('%s, saving to %s' % (print_str, filename), log=log_file, display=False)
 

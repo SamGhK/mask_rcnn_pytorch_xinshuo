@@ -749,7 +749,7 @@ class MaskRCNN(nn.Module):
         for epoch in range(self.epoch + 1, num_epochs + 1):
             log('Epoch {}/{}.'.format(epoch, num_epochs), log=self.log_file)
 
-            loss, loss_rpn_class, loss_rpn_bbox, loss_mrcnn_class, loss_mrcnn_bbox, loss_mrcnn_mask = self.train_epoch(train_generator, optimizer, self.config.STEPS_PER_EPOCH)     # Training
+            loss, loss_rpn_class, loss_rpn_bbox, loss_mrcnn_class, loss_mrcnn_bbox, loss_mrcnn_mask = self.train_epoch(train_generator, optimizer, self.config.STEPS_PER_EPOCH, epoch, num_epochs)     # Training
             val_loss, val_loss_rpn_class, val_loss_rpn_bbox, val_loss_mrcnn_class, val_loss_mrcnn_bbox, val_loss_mrcnn_mask = self.valid_epoch(val_generator, self.config.VALIDATION_STEPS)     # Validation
 
             # Statistics
@@ -760,26 +760,15 @@ class MaskRCNN(nn.Module):
 
         self.epoch = num_epochs
 
-    def train_epoch(self, datagenerator, optimizer, num_steps):
+    def train_epoch(self, datagenerator, optimizer, num_steps, epoch_index, num_epochs):
         batch_count = 0
         loss_sum, loss_rpn_class_sum, loss_rpn_bbox_sum, loss_mrcnn_class_sum, loss_mrcnn_bbox_sum, loss_mrcnn_mask_sum = 0, 0, 0, 0, 0, 0
         step = 0
         optimizer.zero_grad()
-        # print('I am here')
         for images, image_metas, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks, image_index, filename in datagenerator:
-            # print(batch_count)
-            # print(image_index.data)
-            # print(image_index < 965)
-            # if image_index.data != 1631: continue
-            # print(image_index)
-            # print(gt_class_ids)
-            # print(type(gt_class_ids))
             if islist(gt_class_ids): continue           # TODO, why this happen
-            # if islist(image_metas): print(gt_class_ids)
-            # print(filename)
-
-            # Progress
-            printProgressBar(step + 1, num_steps, log=self.log_file, prefix="\t{}/{}".format(step + 1, num_steps), suffix='index: {:5d}, filename: {:40s}'.format(image_index.item(), filename[0]), length=10)
+            printProgressBar(step + 1, num_steps, log=self.log_file, prefix="Mask-RCNN Training, epoch: {}/{}, iter: {}/{}".format(epoch_index, num_epochs, \
+                step + 1, num_steps), suffix=', index: {:5d}'.format(image_index.item()), length=10)
 
             batch_count += 1
             image_metas = image_metas.numpy()       # image_metas as numpy array
@@ -789,17 +778,6 @@ class MaskRCNN(nn.Module):
             # Run object detection
             rpn_class_logits, rpn_pred_bbox, target_class_ids, mrcnn_class_logits, target_deltas, mrcnn_bbox, target_mask, mrcnn_mask = \
                 self.predict([images, image_metas, gt_class_ids, gt_boxes, gt_masks], mode='training')
-
-            # print(target_class_ids.size())
-            # print(rpn_class_logits.size())
-            # print(rpn_pred_bbox.size())
-            # print(mrcnn_class_logits.size())
-            # print(target_deltas.size())
-            # print(mrcnn_bbox.size())
-            # print(target_mask.size())
-            # print(mrcnn_mask.size())
-
-            # print(target_class_ids)
 
             # Compute losses
             rpn_class_loss, rpn_bbox_loss, mrcnn_class_loss, mrcnn_bbox_loss, mrcnn_mask_loss = \
@@ -814,8 +792,10 @@ class MaskRCNN(nn.Module):
                 optimizer.zero_grad()
                 batch_count = 0
 
-            print_log(', loss: {:.2f}, rpn_closs: {:.2f}, rpn_bloss: {:.2f}, mrcnn_closs: {:.2f}, mrcnn_bloss: {:.2f}, mrcnn_mloss: {:.2f}'.format(
-                loss.item(), rpn_class_loss.item(), rpn_bbox_loss.item(), mrcnn_class_loss.item(), mrcnn_bbox_loss.item(), mrcnn_mask_loss.item()), log=self.log_file)
+            print_str = ', loss: {:.2f}, rpn_closs: {:.2f}, rpn_bloss: {:.2f}, mrcnn_closs: {:.2f}, mrcnn_bloss: {:.2f}, mrcnn_mloss: {:.2f}'.format(
+                loss.item(), rpn_class_loss.item(), rpn_bbox_loss.item(), mrcnn_class_loss.item(), mrcnn_bbox_loss.item(), mrcnn_mask_loss.item())
+            print(print_str)
+            print_log('{}, {}'.format(print_str, filename[0]), log=self.log_file, display=False)
 
             loss_sum += loss.item()/num_steps
             loss_rpn_class_sum += rpn_class_loss.item()/num_steps
