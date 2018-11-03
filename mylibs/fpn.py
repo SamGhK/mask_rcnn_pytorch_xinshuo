@@ -3,7 +3,7 @@
 
 import torch, torch.nn as nn, torch.nn.functional as F
 from torch.autograd import Variable
-from roialign.roi_align.crop_and_resize import CropAndResizeFunction
+from .roialign.roi_align.crop_and_resize import CropAndResizeFunction
 from .pytorch_myutils import SamePad2d, log2
 
 ############################################################

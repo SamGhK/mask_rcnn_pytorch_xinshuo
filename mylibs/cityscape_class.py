@@ -2,9 +2,7 @@
 #
 # Cityscapes labels
 #
-
 from collections import namedtuple
-
 
 #--------------------------------------------------------------------------------
 # Definitions

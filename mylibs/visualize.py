@@ -16,7 +16,6 @@ from xinshuo_math import unmold_mask
 ############################################################
 #  Visualization
 ############################################################
-
 def display_images(images, titles=None, cols=4, cmap=None, norm=None,
                    interpolation=None):
     """Display the given set of images, optionally with titles.
@@ -39,7 +38,6 @@ def display_images(images, titles=None, cols=4, cmap=None, norm=None,
                    norm=norm, interpolation=interpolation)
         i += 1
     plt.show()
-
 
 def draw_rois(image, rois, refined_rois, mask, class_ids, class_names, limit=10):
     """

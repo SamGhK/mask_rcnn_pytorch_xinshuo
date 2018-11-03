@@ -112,7 +112,11 @@ for image_file_tmp in image_list:
 	# visualize and save results
 	r = results[0]			# results from the first image
 	num_instances = r['masks'].shape[-1]
-	# fig, _ = visualize_image_with_bbox_mask(image, boxes=r['rois'], masks=r['masks'], class_ids=r['class_ids'], class_names=class_names_bg, scores=r['scores'])
+	bboxes_tmp = r['rois']			# y1, x1, y2, x2 format
+	bboxes_tmp[:, [0, 1]] = bboxes_tmp[:, [1, 0]]
+	bboxes_tmp[:, [2, 3]] = bboxes_tmp[:, [3, 2]]			# x1, y1, x2, y2 format	
+
+	# fig, _ = visualize_image_with_bbox_mask(image, boxes=bboxes_tmp, masks=r['masks'], class_ids=r['class_ids'], class_names=class_names_bg, scores=r['scores'])
 	save_path_tmp = os.path.join(vis_dir, filename+'.jpg')
 	# save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)
 
@@ -125,7 +129,7 @@ for image_file_tmp in image_list:
 	for instance_index in range(num_instances):
 		mask_tmp = r['masks'][:, :, instance_index]
 		class_tmp = r['class_ids'][instance_index]
-		bbox_tmp = r['rois'][instance_index, :]		# y1, x1, y2, x2
+		bbox_tmp = bboxes_tmp[instance_index, :]		# TLBR format
 
 		if dataset == 'coco': class_tmp = class_mapping_coco_to_kitti(class_tmp)
 		elif dataset == 'cityscape': class_tmp = class_mapping_cityscape_to_kitti(class_tmp)

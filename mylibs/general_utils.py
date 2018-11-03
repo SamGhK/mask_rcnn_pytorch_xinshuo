@@ -6,10 +6,7 @@ Copyright (c) 2017 Matterport, Inc.
 Licensed under the MIT License (see LICENSE for details)
 Written by Waleed Abdulla
 """
-
 import sys, os, math, random, numpy as np, scipy.misc, scipy.ndimage, skimage.color, skimage.io, torch
-# from xinshuo_images import image_resize
-# from xinshuo_miscellaneous import print_log
 
 ############################################################
 #  Data Formatting
@@ -69,33 +66,71 @@ def unmold_image(normalized_images, config):
     """Takes a image normalized with mold() and returns the original."""
     return (normalized_images + config.MEAN_PIXEL).astype(np.uint8)
 
-# ############################################################
-# #  Bounding Boxes
-# ############################################################
-# def extract_bboxes(mask):
-#     """Compute bounding boxes from masks.
-#     mask: [height, width, num_instances]. Mask pixels are either 1 or 0.
+############################################################
+#  Bounding Boxes
+############################################################
+def extract_bboxes(mask):
+    """Compute bounding boxes from masks.
+    mask: [height, width, num_instances]. Mask pixels are either 1 or 0.
 
-#     Returns: bbox array [num_instances, (y1, x1, y2, x2)].
-#     """
-#     boxes = np.zeros([mask.shape[-1], 4], dtype=np.int32)
-#     for i in range(mask.shape[-1]):
-#         m = mask[:, :, i]
-#         # Bounding box.
-#         horizontal_indicies = np.where(np.any(m, axis=0))[0]
-#         vertical_indicies = np.where(np.any(m, axis=1))[0]
-#         if horizontal_indicies.shape[0]:
-#             x1, x2 = horizontal_indicies[[0, -1]]
-#             y1, y2 = vertical_indicies[[0, -1]]
-#             # x2 and y2 should not be part of the box. Increment by 1.
-#             x2 += 1
-#             y2 += 1
-#         else:
-#             # No mask for this instance. Might happen due to
-#             # resizing or cropping. Set bbox to zeros
-#             x1, x2, y1, y2 = 0, 0, 0, 0
-#         boxes[i] = np.array([y1, x1, y2, x2])
-#     return boxes.astype(np.int32)
+    Returns: bbox array [num_instances, (y1, x1, y2, x2)].
+    """
+    boxes = np.zeros([mask.shape[-1], 4], dtype=np.int32)
+    for i in range(mask.shape[-1]):
+        m = mask[:, :, i]
+        # Bounding box.
+        horizontal_indicies = np.where(np.any(m, axis=0))[0]
+        vertical_indicies = np.where(np.any(m, axis=1))[0]
+        if horizontal_indicies.shape[0]:
+            x1, x2 = horizontal_indicies[[0, -1]]
+            y1, y2 = vertical_indicies[[0, -1]]
+            # x2 and y2 should not be part of the box. Increment by 1.
+            x2 += 1
+            y2 += 1
+        else:
+            # No mask for this instance. Might happen due to
+            # resizing or cropping. Set bbox to zeros
+            x1, x2, y1, y2 = 0, 0, 0, 0
+        boxes[i] = np.array([y1, x1, y2, x2])
+    return boxes.astype(np.int32)
+
+def compute_iou_yx(box, boxes, box_area, boxes_area):
+    """Calculates IoU of the given box with the array of the given boxes.
+    box: 1D vector [y1, x1, y2, x2]
+    boxes: [boxes_count, (y1, x1, y2, x2)]
+    box_area: float. the area of 'box'
+    boxes_area: array of length boxes_count.
+
+    Note: the areas are passed in rather than calculated here for
+          efficency. Calculate once in the caller to avoid duplicate work.
+    """
+    # Calculate intersection areas
+    y1 = np.maximum(box[0], boxes[:, 0])
+    y2 = np.minimum(box[2], boxes[:, 2])
+    x1 = np.maximum(box[1], boxes[:, 1])
+    x2 = np.minimum(box[3], boxes[:, 3])
+    intersection = np.maximum(x2 - x1, 0) * np.maximum(y2 - y1, 0)
+    union = box_area + boxes_area[:] - intersection[:]
+    iou = intersection / union
+    return iou
+
+def compute_overlaps_yx(boxes1, boxes2):
+    """Computes IoU overlaps between two sets of boxes.
+    boxes1, boxes2: [N, (y1, x1, y2, x2)].
+
+    For better performance, pass the largest set first and the smaller second.
+    """
+    # Areas of anchors and GT boxes
+    area1 = (boxes1[:, 2] - boxes1[:, 0]) * (boxes1[:, 3] - boxes1[:, 1])
+    area2 = (boxes2[:, 2] - boxes2[:, 0]) * (boxes2[:, 3] - boxes2[:, 1])
+
+    # Compute overlaps to generate matrix [boxes1 count, boxes2 count]
+    # Each cell contains the IoU value.
+    overlaps = np.zeros((boxes1.shape[0], boxes2.shape[0]))
+    for i in range(overlaps.shape[1]):
+        box2 = boxes2[i]
+        overlaps[:, i] = compute_iou_yx(box2, boxes1, area2[i], area1)
+    return overlaps
 
 def resize_image(image, min_dim=None, max_dim=None, padding=False):
     """

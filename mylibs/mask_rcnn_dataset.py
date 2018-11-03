@@ -2,8 +2,8 @@
 # Email: xinshuow@andrew.cmu.edu
 
 import torch, numpy as np, torch.utils.data, random
-from .general_utils import resize_image, compose_image_meta, generate_pyramid_anchors, mold_image
-from xinshuo_math import bboxes_from_mask, resize_mask, minimize_mask, compute_overlaps
+from .general_utils import resize_image, compose_image_meta, generate_pyramid_anchors, mold_image, extract_bboxes, compute_overlaps_yx
+from xinshuo_math import resize_mask, minimize_mask
 from xinshuo_io import fileparts
 from xinshuo_visualization import visualize_image, visualize_image_with_bbox
 
@@ -45,8 +45,7 @@ def load_image_gt(dataset, config, image_id, augment=False, use_mini_mask=False)
             mask = np.fliplr(mask)
 
     # Bounding boxes. Note that some boxes might be all zeros if the corresponding mask got cropped out.
-    # bbox = bboxes_from_mask(mask)                           # (num_instances x 4)
-    bbox = bboxes_from_mask(mask)                           # (num_instances x 4)
+    bbox = extract_bboxes(mask)                           # (num_instances x 4)
     # TODO, make sure all boxes are bigger than 0, some masks might be small 
 
     # print(bbox.shape)
@@ -101,11 +100,11 @@ def build_rpn_targets(image_shape, anchors, gt_class_ids, gt_boxes, config):
         gt_boxes = gt_boxes[non_crowd_ix]
         
         # Compute overlaps with crowd boxes [anchors, crowds]
-        crowd_overlaps = compute_overlaps(anchors, crowd_boxes)
+        crowd_overlaps = compute_overlaps_yx(anchors, crowd_boxes)
         crowd_iou_max = np.amax(crowd_overlaps, axis=1)
         no_crowd_bool = (crowd_iou_max < 0.001)
     else: no_crowd_bool = np.ones([anchors.shape[0]], dtype=bool)         # All anchors don't intersect a crowd
-    overlaps = compute_overlaps(anchors, gt_boxes)          # Compute overlaps [num_anchors, num_gt_boxes]
+    overlaps = compute_overlaps_yx(anchors, gt_boxes)          # Compute overlaps [num_anchors, num_gt_boxes]
 
     # Match anchors to GT Boxes
     # If an anchor overlaps a GT box with IoU >= 0.7 then it's positive. If an anchor overlaps a GT box with IoU < 0.3 then it's negative.

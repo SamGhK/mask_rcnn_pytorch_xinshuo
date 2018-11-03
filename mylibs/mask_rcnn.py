@@ -5,8 +5,8 @@ import torch, torch.nn as nn, torch.nn.functional as F, datetime, os, re, torch.
 warnings.filterwarnings('ignore', '.*output shape of zoom.*')
 
 from torch.autograd import Variable
-from nms.nms_wrapper import nms
-from roialign.roi_align.crop_and_resize import CropAndResizeFunction
+from .nms.nms_wrapper import nms
+from .roialign.roi_align.crop_and_resize import CropAndResizeFunction
 from .mask_rcnn_dataset import Mask_RCNN_Dataset
 from .rpn import RPN
 from .resnet import ResNet
@@ -68,13 +68,8 @@ def proposal_layer(inputs, proposal_count, nms_threshold, anchors, config=None):
 	Returns:
 	    Proposals in normalized coordinates [batch, rois, (y1, x1, y2, x2)]
 	"""
-
-	# Currently only supports batchsize 1
-	inputs[0] = inputs[0].squeeze(0)
-	inputs[1] = inputs[1].squeeze(0)
-
-	# Box Scores. Use the foreground class confidence. [Batch, num_rois, 1]
-	scores = inputs[0][:, 1]
+	inputs[0], inputs[1] = inputs[0].squeeze(0), inputs[1].squeeze(0)      # Currently only supports batchsize 1
+	scores = inputs[0][:, 1]           # Box Scores. Use the foreground class confidence. [Batch, num_rois, 1]
 
 	# Box deltas [batch, num_rois, 4]
 	deltas = inputs[1]
