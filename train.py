@@ -77,11 +77,11 @@ if __name__ == '__main__':
         dataset_val.prepare()
 
         print_log("Training network heads", model.log_file)
-        model.train_model(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE, num_epochs=10, layers='heads')
+        model.train_model(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE, num_epochs=20, layers='heads')
         print_log("Fine tune Resnet stage 4 and up", model.log_file)
-        model.train_model(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE, num_epochs=30, layers='4+')
+        model.train_model(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE, num_epochs=120, layers='4+')
         print_log("Fine tune all layers", model.log_file)
-        model.train_model(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE / 10, num_epochs=80, layers='all')
+        model.train_model(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE, num_epochs=160, layers='all')
     else: print_log("'{}' is not recognized. " "Use 'train' or 'evaluate'".format(args.command), model.log_file)
 
     model.log_file.close()

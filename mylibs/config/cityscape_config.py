@@ -99,6 +99,48 @@ Label = namedtuple('Label', [
 #     Label(  'bicycle'              , 10 ,       18 , 'vehicle'         , 7       , True         , False        , (119, 11, 32) ),
 # ]
 
+labels = [
+    #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
+    Label(  'person'               , 1 ,        11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
+    Label(  'rider'                , 2 ,        12 , 'human'           , 6       , True         , False        , (255,  0,  0) ),
+    Label(  'car'                  , 3 ,        13 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
+    Label(  'truck'                , 4 ,        14 , 'vehicle'         , 7       , True         , False        , (  0,  0, 70) ),
+    Label(  'bus'                  , 5 ,        15 , 'vehicle'         , 7       , True         , False        , (  0, 60,100) ),
+    Label(  'caravan'              , 6 ,       255 , 'vehicle'         , 7       , True         , True         , (  0,  0, 90) ),
+    Label(  'trailer'              , 7 ,       255 , 'vehicle'         , 7       , True         , True         , (  0,  0,110) ),
+    Label(  'train'                , 8 ,        16 , 'vehicle'         , 7       , True         , False        , (  0, 80,100) ),
+    Label(  'motorcycle'           , 9 ,        17 , 'vehicle'         , 7       , True         , False        , (  0,  0,230) ),
+    Label(  'bicycle'              , 10 ,       18 , 'vehicle'         , 7       , True         , False        , (119, 11, 32) ),
+    Label(  'license plate'        , 11 ,       -1 , 'vehicle'         , 7       , False        , True         , (  0,  0,142) ),
+    Label(  'wall'                 , 12 ,         3 , 'construction'    , 2       , False        , False        , (102,102,156) ),
+    Label(  'fence'                , 13 ,         4 , 'construction'    , 2       , False        , False        , (190,153,153) ),
+    Label(  'guard rail'           , 14 ,       255 , 'construction'    , 2       , False        , True         , (180,165,180) ),
+    Label(  'bridge'               , 15 ,       255 , 'construction'    , 2       , False        , True         , (150,100,100) ),
+    Label(  'tunnel'               , 16 ,       255 , 'construction'    , 2       , False        , True         , (150,120, 90) ),
+    Label(  'pole'                 , 17 ,         5 , 'object'          , 3       , False        , False        , (153,153,153) ),
+    Label(  'polegroup'            , 18 ,       255 , 'object'          , 3       , False        , True         , (153,153,153) ),
+    Label(  'traffic light'        , 19 ,         6 , 'object'          , 3       , False        , False        , (250,170, 30) ),
+    Label(  'traffic sign'         , 20 ,         7 , 'object'          , 3       , False        , False        , (220,220,  0) ),
+]
+
+# labels = [
+#     #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
+#     Label(  'person'               , 1 ,       11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
+#     Label(  'rider'                , 2 ,       12 , 'human'           , 6       , True         , False        , (255,  0,  0) ),
+#     Label(  'car'                  , 3 ,       13 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
+# ]
+
+
+# cityscape_class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle']
+cityscape_class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle', \
+    'licensy plate', 'wall', 'fence', 'guard rail', 'bridge', 'tunnel', 'pole', 'polegroup', 'traffic light', 'traffic sign']
+# cityscape_class_names = ['person', 'rider', 'car']
+
+cityscape_name2label = { label.name: label for label in labels}     # name to label object
+cityscape_id2label   = { label.id  : label for label in labels}    # id to label object
+
+
+
 # labels = [
 #     #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
 #     Label(  'person'               , 1 ,       11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
@@ -114,39 +156,18 @@ Label = namedtuple('Label', [
 #     Label(  'traffic light'        , 11 ,        6 , 'object'          , 3       , False        , False        , (250,170, 30) ),
 #     Label(  'traffic sign'         , 12 ,        7 , 'object'          , 3       , False        , False        , (220,220,  0) ),
 #     Label(  'vegetation'           , 13 ,        8 , 'nature'          , 4       , False        , False        , (107,142, 35) ),
+#     Label(  'building'             , 14 ,        2 , 'construction'    , 2       , False        , False        , ( 70, 70, 70) ),
+#     Label(  'wall'                 , 15 ,        3 , 'construction'    , 2       , False        , False        , (102,102,156) ),
+#     Label(  'fence'                , 16 ,        4 , 'construction'    , 2       , False        , False        , (190,153,153) ),
+#     Label(  'guard rail'           , 17 ,      255 , 'construction'    , 2       , False        , True         , (180,165,180) ),
+#     Label(  'bridge'               , 18 ,      255 , 'construction'    , 2       , False        , True         , (150,100,100) ),
+#     Label(  'tunnel'               , 19 ,      255 , 'construction'    , 2       , False        , True         , (150,120, 90) ),
+#     Label(  'terrain'              , 20 ,        9 , 'nature'          , 4       , False        , False        , (152,251,152) ),
+#     Label(  'sky'                  , 21 ,       10 , 'sky'             , 5       , False        , False        , ( 70,130,180) ),
 # ]
 
-labels = [
-    #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
-    Label(  'person'               , 1 ,       11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
-    Label(  'rider'                , 2 ,       12 , 'human'           , 6       , True         , False        , (255,  0,  0) ),
-    Label(  'car'                  , 3 ,       13 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
-    Label(  'truck'                , 4 ,       14 , 'vehicle'         , 7       , True         , False        , (  0,  0, 70) ),
-    Label(  'bus'                  , 5 ,       15 , 'vehicle'         , 7       , True         , False        , (  0, 60,100) ),
-    Label(  'caravan'              , 6 ,      255 , 'vehicle'         , 7       , True         , True         , (  0,  0, 90) ),
-    Label(  'trailer'              , 7 ,      255 , 'vehicle'         , 7       , True         , True         , (  0,  0,110) ),
-    Label(  'train'                , 8 ,       16 , 'vehicle'         , 7       , True         , False        , (  0, 80,100) ),
-    Label(  'motorcycle'           , 9 ,       17 , 'vehicle'         , 7       , True         , False        , (  0,  0,230) ),
-    Label(  'bicycle'              , 10 ,       18 , 'vehicle'         , 7       , True         , False        , (119, 11, 32) ),
-    Label(  'traffic light'        , 11 ,        6 , 'object'          , 3       , False        , False        , (250,170, 30) ),
-    Label(  'traffic sign'         , 12 ,        7 , 'object'          , 3       , False        , False        , (220,220,  0) ),
-    Label(  'vegetation'           , 13 ,        8 , 'nature'          , 4       , False        , False        , (107,142, 35) ),
-    Label(  'building'             , 14 ,        2 , 'construction'    , 2       , False        , False        , ( 70, 70, 70) ),
-    Label(  'wall'                 , 15 ,        3 , 'construction'    , 2       , False        , False        , (102,102,156) ),
-    Label(  'fence'                , 16 ,        4 , 'construction'    , 2       , False        , False        , (190,153,153) ),
-    Label(  'guard rail'           , 17 ,      255 , 'construction'    , 2       , False        , True         , (180,165,180) ),
-    Label(  'bridge'               , 18 ,      255 , 'construction'    , 2       , False        , True         , (150,100,100) ),
-    Label(  'tunnel'               , 19 ,      255 , 'construction'    , 2       , False        , True         , (150,120, 90) ),
-    Label(  'terrain'              , 20 ,        9 , 'nature'          , 4       , False        , False        , (152,251,152) ),
-    Label(  'sky'                  , 21 ,       10 , 'sky'             , 5       , False        , False        , ( 70,130,180) ),
-]
-
-# cityscape_class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle']
-# cityscape_class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle', 'traffic light', 'traffic sign', 'vegetation']
-cityscape_class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle', 'traffic light', 'traffic sign', 'vegetation', 'building', 'wall', 'fence', 'guard rail', 'bridge', 'tunnel', 'terrain', 'sky']
-
-cityscape_name2label = { label.name: label for label in labels}     # name to label object
-cityscape_id2label   = { label.id  : label for label in labels}    # id to label object
+# cityscape_class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle', 'traffic light', \ 
+    # 'traffic sign', 'vegetation', 'building', 'wall', 'fence', 'guard rail', 'bridge', 'tunnel', 'terrain', 'sky']
 
 def class_mapping_cityscape_to_kitti(class_id):
     if class_id in [1]:

@@ -4,7 +4,7 @@
 # CityScape dataset loader
 
 import os, time, numpy as np, copy
-from mylibs import General_Dataset, cityscape_id2label, cityscape_name2label, cityscape_class_names, Config, CityScapeAnnotation
+from mylibs import General_Dataset, Config
 from xinshuo_io import mkdir_if_missing, fileparts, load_list_from_folder
 from xinshuo_math import bboxes_from_mask
 from xinshuo_miscellaneous import is_path_exists, islist, find_unique_common_from_lists
@@ -20,17 +20,17 @@ except:
 ############################################################
 #  Configurations
 ############################################################
-class CityscapeConfig(Config):
+class KITTIConfig(Config):
     """Configuration for training on CityScape.
     """
-    NAME = 'cityscape'          # Give the configuration a recognizable name
+    NAME = 'kitti'          # Give the configuration a recognizable name
     IMAGES_PER_GPU = 1
-    NUM_CLASSES = 1 + len(cityscape_class_names)        # Number of classes (including background)
+    NUM_CLASSES = 1 + len(kitti_class_names)        # Number of classes (including background)
 
 ############################################################
 #  Dataset Loader
 ############################################################
-class CityScapeDataset(General_Dataset):
+class KITTIDataset(General_Dataset):
     def __init__(self, dataset_dir, split, gttype):
         '''
         create a subset of the CityScape dataset
@@ -38,7 +38,7 @@ class CityScapeDataset(General_Dataset):
         dataset_dir: The root directory of the dataset.
         subset: What to load (train, val)
         '''
-        super(CityScapeDataset, self).__init__()
+        super(KITTIDataset, self).__init__()
         assert split == 'train' or split == 'val', 'the subset can be either train or val'
         assert gttype == 'gtFine' or gttype == 'gtCoarse', 'the type of gt data is not good'
 
@@ -137,7 +137,7 @@ class CityScapeDataset(General_Dataset):
             print('loading all data')
             class_ids = sorted(cityscape_id2label.keys())    
             image_ids = sorted(self.images_dict.keys())  # All images
-            
+            # print(image_ids[0: 5])
         print('number of images for the requested id added to the dataset is %d' % len(image_ids))
 
         # add all images and classes into the dataset
@@ -161,7 +161,9 @@ class CityScapeDataset(General_Dataset):
         
         image_info_tmp = self.image_info[image_index]
         if image_info_tmp['source'] != 'cityscape': return super(CityScapeDataset, self).load_mask(image_index)
+
         annotation_file = image_info_tmp['annotation_file']
+        # print(type(annotation_file))
 
         return self.anno2mask(annotation_file, image_index)
 
@@ -180,6 +182,13 @@ class CityScapeDataset(General_Dataset):
         anno_data.fromJsonFile(annotation_file)
         size = (anno_data.imgWidth, anno_data.imgHeight)          # the size of the image
 
+        # the background
+        # if encoding == 'ids': backgroundId = cityscape_name2label['unlabeled'].id
+        # elif encoding == 'trainIds': backgroundId = cityscape_name2label['unlabeled'].trainId
+        # else:
+            # print("Unknown encoding '{}'".format(encoding))
+            # return None
+
         masks = []
         class_ids = []
         for obj in anno_data.objects:
@@ -196,7 +205,9 @@ class CityScapeDataset(General_Dataset):
             if (not label in cityscape_name2label) and label.endswith('group'):
                 label = label[:-len('group')]
                 isGroup = True
-            if not label in cityscape_name2label:  continue
+            if not label in cityscape_name2label: 
+                # printError( "Label '{}' not known.".format(label) )
+                continue
             labelTuple = cityscape_name2label[label]          # the label tuple
 
             # get the class ID
@@ -229,6 +240,6 @@ class CityScapeDataset(General_Dataset):
 
         masks, class_ids = self.load_mask(image_index)
         bbox = bboxes_from_mask(masks)                           # TLBR format, N x 4
-        fig, _ = visualize_image_with_bbox_mask(image, boxes=bbox, masks=masks, class_ids=class_ids, class_names=['BG'] + cityscape_class_names)
+        fig, _ = visualize_image_with_bbox_mask(image, boxes=bbox, masks=masks, class_ids=class_ids, class_names=['BG'] + class_names)
         save_path_tmp = os.path.join(save_dir, filename+'.jpg')
         save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)

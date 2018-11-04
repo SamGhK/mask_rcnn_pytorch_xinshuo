@@ -815,7 +815,7 @@ class MaskRCNN(nn.Module):
         loss_sum, loss_rpn_class_sum, loss_rpn_bbox_sum, loss_mrcnn_class_sum, loss_mrcnn_bbox_sum, loss_mrcnn_mask_sum = 0, 0, 0, 0, 0, 0
         for images, image_metas, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks, image_index, filename in datagenerator:            
             if islist(gt_class_ids): continue           # TODO, why this happen
-            printProgressBar(step + 1, num_steps, log=self.log_file, prefix="Mask-RCNN Training, epoch: {}/{}, iter: {}/{}".format(epoch_index, num_epochs, \
+            printProgressBar(step + 1, num_steps, log=self.log_file, prefix="Mask-RCNN Validation, epoch: {}/{}, iter: {}/{}".format(epoch_index, num_epochs, \
                 step + 1, num_steps), suffix=', index: {:5d}'.format(image_index.item()), length=10)
 
             image_metas = image_metas.numpy()

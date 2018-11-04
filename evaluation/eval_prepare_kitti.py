@@ -14,7 +14,7 @@ epoch = 60
 object_interest = {1: 'Pedestrian', 2: 'Car', 3: 'Cyclist'}
 kitti_dir = '/media/xinshuo/Data/Datasets/KITTI'
 data_dir = os.path.join(kitti_dir, 'object/training')
-results_name = 'maskrcnn_bbox_detection_results_%s_%s' % (train_dataset, get_timestring())
+results_name = 'maskrcnn_bbox_detection_results_%s_%depoch_%s' % (train_dataset, epoch, get_timestring())
 root_dir = os.getcwd()                      # Root directory of the project
 
 # Index of the class in the list is its ID. For example, to get ID of # the teddy bear class, use: class_names.index('teddy bear')
@@ -46,15 +46,16 @@ detection_result_filepath = os.path.join(save_dir, 'mask_results.txt'); detectio
 ##--------------------------------- Model Directory ----------------------------------##
 if train_dataset == 'coco': model_path = os.path.join(root_dir, '../models/mask_rcnn_coco.pth')    			# Path to trained weights file
 elif train_dataset == 'cityscape': 
-	model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/cityscape20181018T0035/mask_rcnn_cityscape_%04d.pth' % epoch
+	model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/cityscape20181103T1920/mask_rcnn_cityscape_%04d.pth' % epoch
 else: model_path = os.path.join(root_dir, 'resnet50_imagenet.pth')    		# Path to trained weights from Imagenet
 model = MaskRCNN(model_dir=save_dir, config=config)			# Create model object.
 if config.GPU_COUNT: model = model.cuda()
 model.load_weights(model_path)    # Load weights 
+print_log('load weights from %s' % model_path, log=log_file)
 
 ##--------------------------------- Build KITTI Evaluation Results ----------------------------------##
 id_list, num_list = load_list_from_file(split_file)
-print('KITTI Evaluation: testing results on %d images' % num_list) 
+print_log('KITTI Evaluation: testing results on %d images' % num_list, log=log_file) 
 count = 1
 timer = Timer(); timer.tic()
 for id_tmp in id_list:
