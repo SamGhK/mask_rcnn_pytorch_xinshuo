@@ -3,15 +3,17 @@
 import os, torch, numpy as np, matplotlib.pyplot as plt
 if "DISPLAY" not in os.environ: plt.switch_backend('agg')
 from mylibs import MaskRCNN, cityscape_class_names, Config, coco_class_names, class_mapping_coco_to_kitti, class_mapping_cityscape_to_kitti
-from xinshuo_io import load_list_from_folder, fileparts, mkdir_if_missing, load_image, save_image
+from xinshuo_io import load_list_from_file, fileparts, mkdir_if_missing, load_image, save_image
 from xinshuo_visualization import visualize_image_with_bbox_mask
 from xinshuo_visualization.python.private import save_vis_close_helper
 from xinshuo_miscellaneous import convert_secs2time, Timer, get_timestring, print_log
 
 train_dataset = 'cityscape'
+split = 'val' 		# train, val, trainval, test
 epoch = 60
 object_interest = {1: 'Pedestrian', 2: 'Car', 3: 'Cyclist'}
-data_dir = '/media/xinshuo/Data/Datasets/KITTI/object/training'
+kitti_dir = '/media/xinshuo/Data/Datasets/KITTI'
+data_dir = os.path.join(kitti_dir, 'object/training')
 results_name = 'maskrcnn_bbox_detection_results_%s_%s' % (train_dataset, get_timestring())
 root_dir = os.getcwd()                      # Root directory of the project
 
@@ -31,6 +33,7 @@ class InferenceConfig(Config):
 config = InferenceConfig()
 
 ##--------------------------------- Data Directory ----------------------------------##
+split_file = os.path.join(kitti_dir, 'mykitti/object/mysplit/%s.txt' % split)
 images_dir = os.path.join(data_dir, 'image_2')
 save_dir = os.path.join(data_dir, 'results/%s' % results_name); mkdir_if_missing(save_dir)
 vis_dir = os.path.join(save_dir, 'visualization'); mkdir_if_missing(vis_dir)
@@ -42,20 +45,20 @@ detection_result_filepath = os.path.join(save_dir, 'mask_results.txt'); detectio
 
 ##--------------------------------- Model Directory ----------------------------------##
 if train_dataset == 'coco': model_path = os.path.join(root_dir, '../models/mask_rcnn_coco.pth')    			# Path to trained weights file
-elif train_dataset == 'cityscape': model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/cityscape20181018T0035/mask_rcnn_cityscape_%04d.pth' % epoch
+elif train_dataset == 'cityscape': 
+	model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/cityscape20181018T0035/mask_rcnn_cityscape_%04d.pth' % epoch
 else: model_path = os.path.join(root_dir, 'resnet50_imagenet.pth')    		# Path to trained weights from Imagenet
 model = MaskRCNN(model_dir=save_dir, config=config)			# Create model object.
 if config.GPU_COUNT: model = model.cuda()
 model.load_weights(model_path)    # Load weights 
 
 ##--------------------------------- Build KITTI Evaluation Results ----------------------------------##
-image_list, num_list = load_list_from_folder(images_dir)
+id_list, num_list = load_list_from_file(split_file)
 print('KITTI Evaluation: testing results on %d images' % num_list) 
 count = 1
 timer = Timer(); timer.tic()
-# for index in range(938, num_list):
-for image_file_tmp in image_list:
-	# image_file_tmp = image_list[index]
+for id_tmp in id_list:
+	image_file_tmp = os.path.join(images_dir, id_tmp+'.png')
 	_, filename, _ = fileparts(image_file_tmp)
 	bbox_eval_file_tmp = os.path.join(bbox_eval_folder, filename+'.txt'); bbox_eval_file_tmp = open(bbox_eval_file_tmp, 'w')
 	label_matching_file_tmp	= os.path.join(label_bbox_match_dir, filename+'.txt')
@@ -98,7 +101,6 @@ for image_file_tmp in image_list:
 		if not (class_id in object_interest.keys()): continue
 		class_name_tmp = object_interest[class_id]
 		
-
 		bbox_tmp = bboxes_tmp[instance_index, :]		# TLBR format
 		score_tmp = r['scores'][instance_index]
 		mask_tmp = r['masks'][:, :, instance_index]

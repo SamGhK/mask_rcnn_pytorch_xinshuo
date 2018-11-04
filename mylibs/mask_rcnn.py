@@ -750,7 +750,7 @@ class MaskRCNN(nn.Module):
             log('Epoch {}/{}.'.format(epoch, num_epochs), log=self.log_file)
 
             loss, loss_rpn_class, loss_rpn_bbox, loss_mrcnn_class, loss_mrcnn_bbox, loss_mrcnn_mask = self.train_epoch(train_generator, optimizer, self.config.STEPS_PER_EPOCH, epoch, num_epochs)     # Training
-            val_loss, val_loss_rpn_class, val_loss_rpn_bbox, val_loss_mrcnn_class, val_loss_mrcnn_bbox, val_loss_mrcnn_mask = self.valid_epoch(val_generator, self.config.VALIDATION_STEPS)     # Validation
+            val_loss, val_loss_rpn_class, val_loss_rpn_bbox, val_loss_mrcnn_class, val_loss_mrcnn_bbox, val_loss_mrcnn_mask = self.valid_epoch(val_generator, self.config.VALIDATION_STEPS, epoch, num_epochs)     # Validation
 
             # Statistics
             self.loss_history.append([loss, loss_rpn_class, loss_rpn_bbox, loss_mrcnn_class, loss_mrcnn_bbox, loss_mrcnn_mask])
@@ -810,12 +810,13 @@ class MaskRCNN(nn.Module):
 
         return loss_sum, loss_rpn_class_sum, loss_rpn_bbox_sum, loss_mrcnn_class_sum, loss_mrcnn_bbox_sum, loss_mrcnn_mask_sum
 
-    def valid_epoch(self, datagenerator, num_steps):
+    def valid_epoch(self, datagenerator, num_steps, epoch_index, num_epochs):
         step = 0
         loss_sum, loss_rpn_class_sum, loss_rpn_bbox_sum, loss_mrcnn_class_sum, loss_mrcnn_bbox_sum, loss_mrcnn_mask_sum = 0, 0, 0, 0, 0, 0
         for images, image_metas, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks, image_index, filename in datagenerator:            
             if islist(gt_class_ids): continue           # TODO, why this happen
-            printProgressBar(step + 1, num_steps, log=self.log_file, prefix="\t{}/{}".format(step + 1, num_steps), suffix='index: {:5d}, filename: {:40s}'.format(image_index.item(), filename[0]), length=10)
+            printProgressBar(step + 1, num_steps, log=self.log_file, prefix="Mask-RCNN Training, epoch: {}/{}, iter: {}/{}".format(epoch_index, num_epochs, \
+                step + 1, num_steps), suffix=', index: {:5d}'.format(image_index.item()), length=10)
 
             image_metas = image_metas.numpy()
 
@@ -831,8 +832,10 @@ class MaskRCNN(nn.Module):
             rpn_class_loss, rpn_bbox_loss, mrcnn_class_loss, mrcnn_bbox_loss, mrcnn_mask_loss = compute_losses(rpn_match, rpn_bbox, rpn_class_logits, rpn_pred_bbox, target_class_ids, mrcnn_class_logits, target_deltas, mrcnn_bbox, target_mask, mrcnn_mask)
             loss = rpn_class_loss + rpn_bbox_loss + mrcnn_class_loss + mrcnn_bbox_loss + mrcnn_mask_loss
 
-            print_log(', loss: {:.2f}, rpn_closs: {:.2f}, rpn_bloss: {:.2f}, mrcnn_closs: {:.2f}, mrcnn_bloss: {:.2f}, mrcnn_mloss: {:.2f}'.format(
-                loss.item(), rpn_class_loss.item(), rpn_bbox_loss.item(), mrcnn_class_loss.item(), mrcnn_bbox_loss.item(), mrcnn_mask_loss.item()), log=self.log_file)
+            print_str = ', loss: {:.2f}, rpn_closs: {:.2f}, rpn_bloss: {:.2f}, mrcnn_closs: {:.2f}, mrcnn_bloss: {:.2f}, mrcnn_mloss: {:.2f}'.format(
+                loss.item(), rpn_class_loss.item(), rpn_bbox_loss.item(), mrcnn_class_loss.item(), mrcnn_bbox_loss.item(), mrcnn_mask_loss.item())
+            print(print_str)
+            print_log('{}, {}'.format(print_str, filename[0]), log=self.log_file, display=False)
 
             # Statistics
             loss_sum += loss.item()/num_steps
