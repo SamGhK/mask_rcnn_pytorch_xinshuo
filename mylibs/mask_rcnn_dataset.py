@@ -29,9 +29,6 @@ def load_image_gt(dataset, config, image_id, augment=False, use_mini_mask=False)
     # Load image and mask
     image = dataset.load_image(image_id)                    # (height x width x 3)
     mask, class_ids = dataset.load_mask(image_id)           # (height x width x num_instances), (num_instances, )
-    # print(mask.shape)                   
-    # print(image.shape)
-    # print(class_ids.shape)
 
     # TODO, check what happened here
     # assert len(mask.shape) == 3 and mask.shape[0] == image.shape[0] and mask.shape[1] == image.shape[1], 'the input mask shape is not correct'
@@ -46,29 +43,18 @@ def load_image_gt(dataset, config, image_id, augment=False, use_mini_mask=False)
 
     # Bounding boxes. Note that some boxes might be all zeros if the corresponding mask got cropped out.
     bbox = extract_bboxes(mask)                           # (num_instances x 4)
-    # TODO, make sure all boxes are bigger than 0, some masks might be small 
 
-    # print(bbox.shape)
-    # zxc
-
-    # Active classes
     # Different datasets have different classes, so track the classes supported in the dataset of this image.
     active_class_ids = np.zeros([dataset.num_classes], dtype=np.int32)
     source_class_ids = dataset.source_class_ids[dataset.image_info[image_id]['source']]
-    active_class_ids[source_class_ids] = 1
+    active_class_ids[source_class_ids] = 1          # should be a list of 1s, length is number of classes
+    if use_mini_mask: mask, good_index_list = minimize_mask(bbox, mask, config.MINI_MASK_SHAPE)          # Resize masks to smaller size to reduce memory usage
+    
+    # remove the bad mask: e.g., area of the mask == 0
+    bbox = bbox[good_index_list, :]
+    mask = mask[:, :, good_index_list]
+    class_ids = class_ids[good_index_list]
 
-    if use_mini_mask: 
-        # print(mask.shape)
-        # print(config.MINI_MASK_SHAPE)
-        # print(bbox.shape)
-
-        # visualize_image(image, save_path='image.jpg')
-        # for i in range(20):
-            # visualize_image(mask[:, :, i], save_path='mask%03d.jpg' % i)
-
-        mask = minimize_mask(bbox, mask, config.MINI_MASK_SHAPE)          # Resize masks to smaller size to reduce memory usage
-        # print(mask.shape)
-        # zxc
     image_meta = compose_image_meta(image_id, image.shape, window, active_class_ids)          # Image meta data
     return image, image_meta, class_ids, bbox, mask
 

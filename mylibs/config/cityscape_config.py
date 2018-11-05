@@ -130,7 +130,6 @@ labels = [
 #     Label(  'car'                  , 3 ,       13 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
 # ]
 
-
 # cityscape_class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle']
 cityscape_class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle', \
     'licensy plate', 'wall', 'fence', 'guard rail', 'bridge', 'tunnel', 'pole', 'polegroup', 'traffic light', 'traffic sign']

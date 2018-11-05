@@ -769,6 +769,7 @@ class MaskRCNN(nn.Module):
             if islist(gt_class_ids): continue           # TODO, why this happen
             printProgressBar(step + 1, num_steps, log=self.log_file, prefix="Mask-RCNN Training, epoch: {}/{}, iter: {}/{}".format(epoch_index, num_epochs, \
                 step + 1, num_steps), suffix=', index: {:5d}'.format(image_index.item()), length=10)
+            print_log(', {:40s}'.format(filename[0]), log=self.log_file, display=False, same_line=True)
 
             batch_count += 1
             image_metas = image_metas.numpy()       # image_metas as numpy array
@@ -794,8 +795,7 @@ class MaskRCNN(nn.Module):
 
             print_str = ', loss: {:.2f}, rpn_closs: {:.2f}, rpn_bloss: {:.2f}, mrcnn_closs: {:.2f}, mrcnn_bloss: {:.2f}, mrcnn_mloss: {:.2f}'.format(
                 loss.item(), rpn_class_loss.item(), rpn_bbox_loss.item(), mrcnn_class_loss.item(), mrcnn_bbox_loss.item(), mrcnn_mask_loss.item())
-            print(print_str)
-            print_log('{}, {}'.format(print_str, filename[0]), log=self.log_file, display=False)
+            print_log(print_str, log=self.log_file)
 
             loss_sum += loss.item()/num_steps
             loss_rpn_class_sum += rpn_class_loss.item()/num_steps
@@ -817,9 +817,9 @@ class MaskRCNN(nn.Module):
             if islist(gt_class_ids): continue           # TODO, why this happen
             printProgressBar(step + 1, num_steps, log=self.log_file, prefix="Mask-RCNN Validation, epoch: {}/{}, iter: {}/{}".format(epoch_index, num_epochs, \
                 step + 1, num_steps), suffix=', index: {:5d}'.format(image_index.item()), length=10)
+            print_log(', {:40s}'.format(filename[0]), log=self.log_file, display=False, same_line=True)
 
             image_metas = image_metas.numpy()
-
             with torch.no_grad():
                 images, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks = Variable(images), Variable(rpn_match), Variable(rpn_bbox), Variable(gt_class_ids), Variable(gt_boxes), Variable(gt_masks)
                 if self.config.GPU_COUNT: images, rpn_match, rpn_bbox, gt_class_ids, gt_boxes, gt_masks = images.cuda(), rpn_match.cuda(), rpn_bbox.cuda(), gt_class_ids.cuda(), gt_boxes.cuda(), gt_masks.cuda()
@@ -834,8 +834,7 @@ class MaskRCNN(nn.Module):
 
             print_str = ', loss: {:.2f}, rpn_closs: {:.2f}, rpn_bloss: {:.2f}, mrcnn_closs: {:.2f}, mrcnn_bloss: {:.2f}, mrcnn_mloss: {:.2f}'.format(
                 loss.item(), rpn_class_loss.item(), rpn_bbox_loss.item(), mrcnn_class_loss.item(), mrcnn_bbox_loss.item(), mrcnn_mask_loss.item())
-            print(print_str)
-            print_log('{}, {}'.format(print_str, filename[0]), log=self.log_file, display=False)
+            print_log(print_str, log=self.log_file)
 
             # Statistics
             loss_sum += loss.item()/num_steps
