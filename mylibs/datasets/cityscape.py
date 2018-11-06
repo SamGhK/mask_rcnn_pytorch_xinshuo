@@ -68,9 +68,9 @@ class CityScapeDataset(General_Dataset):
             if len(intersect_list) > 0: image_id_list.append(image_id_tmp)
         return image_id_list
 
-    def sweep_data(self, encoding='ids'):
+    def sweep_data(self):
         '''
-        sweep the data and return the dictionary of infomation for every images
+        sweep the data and return the dictionary of ground truth infomation for every images
 
         outputs:
             images_dict:        a dictionary of info, keys are the image ids, values are a dictionary {'width':, 'height':, 'ids': a list of object ids contained}
@@ -82,35 +82,10 @@ class CityScapeDataset(General_Dataset):
         for anno_tmp in anno_list:
             _, filename, _ = fileparts(anno_tmp)
             image_id = filename.split('_gt')[0]
-            anno_data = CityScapeAnnotation()
-            anno_data.fromJsonFile(anno_tmp)
-            obj_type_list = []
-            for obj in anno_data.objects:
-                label = obj.label
+            img_shape, class_ids = self.anno2mask(anno_tmp, run_fast=True)
 
-                if obj.deleted: continue            # If the object is deleted, skip it
-
-                # if the label is not known, but ends with a 'group' (e.g. cargroup) try to remove the s and see if that works
-                # also we know that this polygon describes a group
-                # TODO: ?????? what is the group
-                isGroup = False
-                if (not label in cityscape_name2label) and label.endswith('group'):
-                    label = label[:-len('group')]
-                    isGroup = True
-                if not label in cityscape_name2label:
-                    # printError('Label {} not known.'.format(label))
-                    continue
-                labelTuple = cityscape_name2label[label]          # the label tuple
-
-                # get the class ID
-                if encoding == 'ids': id_tmp = labelTuple.id
-                elif encoding == 'trainIds': id_tmp = labelTuple.trainId
-
-                # if id_tmp in ignore_id_list: continue
-                obj_type_list.append(id_tmp)
-
-            obj_type_list = list(set(obj_type_list))
-            image_data = {'width': anno_data.imgWidth, 'height': anno_data.imgHeight, 'ids': obj_type_list}
+            class_ids = list(set(class_ids))
+            image_data = {'width': img_shape[0], 'height': img_shape[1], 'ids': class_ids}
             images_dict[image_id] = image_data
 
         return images_dict
@@ -165,12 +140,13 @@ class CityScapeDataset(General_Dataset):
 
         return self.anno2mask(annotation_file, image_index)
 
-    def anno2mask(self, annotation_file, image_index, encoding='ids'):
+    def anno2mask(self, annotation_file, image_index=0, run_fast=False):
         '''
         convert an annotation file from Cityscapes to an array of mask images and its corresponding ids
 
         parameters:
             annotation_file:        a path to the annotation file corresponding to an image
+            run_fast:               only return the list of ids and shape instead of the actual mask
 
         outputs:
             masks:                  A uint8 array of shape [height, width, num_instances] with one mask per instance.
@@ -183,10 +159,7 @@ class CityScapeDataset(General_Dataset):
         masks = []
         class_ids = []
         for obj in anno_data.objects:
-            instanceImg = Image.new('I', size, 0)        # this is the image that we want to create
-            drawer = ImageDraw.Draw(instanceImg)                  # a drawer to draw into the image
             label   = obj.label
-            polygon = obj.polygon
             if obj.deleted: continue            # If the object is deleted, skip it
 
             # if the label is not known, but ends with a 'group' (e.g. cargroup) try to remove the s and see if that works
@@ -198,21 +171,24 @@ class CityScapeDataset(General_Dataset):
                 isGroup = True
             if not label in cityscape_name2label:  continue
             labelTuple = cityscape_name2label[label]          # the label tuple
-
-            # get the class ID
-            if encoding == "ids": id_tmp = labelTuple.id
-            elif encoding == "trainIds": id_tmp = labelTuple.trainId
-            
+            id_tmp = labelTuple.id          # get the class ID
             if id_tmp < 0: continue         # If the ID is negative that polygon should not be drawn
+            class_ids.append(id_tmp)
+
+            # load the mask
+            if run_fast: continue
+            instanceImg = Image.new('I', size, 0)        # this is the image that we want to create
+            drawer = ImageDraw.Draw(instanceImg)                  # a drawer to draw into the image
+            polygon = obj.polygon
             try:
                 drawer.polygon(polygon, fill=1)
-                mask_instance_tmp = np.array(instanceImg, dtype='uint8')
+                mask_instance_tmp = np.array(instanceImg, dtype='uint8')            # 0/1 uint8 image
                 masks.append(mask_instance_tmp)
-                class_ids.append(id_tmp)
             except:
-                print("Failed to draw polygon with label {} and id {}: {}".format(label,id,polygon))
+                print("Failed to draw polygon with label {} and id {}: {}".format(label, id_tmp, polygon))
                 raise
 
+        if run_fast: return size, class_ids
         if class_ids:
             masks = np.stack(masks, axis=2)
             class_ids = np.array(class_ids, dtype=np.int32)

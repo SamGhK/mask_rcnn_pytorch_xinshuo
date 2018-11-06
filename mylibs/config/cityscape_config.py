@@ -169,12 +169,9 @@ cityscape_id2label   = { label.id  : label for label in labels}    # id to label
     # 'traffic sign', 'vegetation', 'building', 'wall', 'fence', 'guard rail', 'bridge', 'tunnel', 'terrain', 'sky']
 
 def class_mapping_cityscape_to_kitti(class_id):
-    if class_id in [1]:
-        return 1        # pedestrian
-    elif class_id in [2]:
-        return 3        # cyclist
-    elif class_id in [3]:
-        return 2        # car
+    if class_id in [1]: return 1        # pedestrian
+    elif class_id in [2]: return 3        # cyclist
+    elif class_id in [3]: return 2        # car
     else: return 0
 
 # Type of an object

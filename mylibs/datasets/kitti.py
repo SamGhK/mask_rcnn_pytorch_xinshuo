@@ -3,12 +3,13 @@
 
 # CityScape dataset loader
 
-import os, time, numpy as np, copy
-from mylibs import General_Dataset, Config
-from xinshuo_io import mkdir_if_missing, fileparts, load_list_from_folder
+import os, time, numpy as np, copy, cv2
+from mylibs import General_Dataset, Config, kitti_class_names, kitti_id2label, class_mapping_kitti_to_mykitti
+from xinshuo_io import mkdir_if_missing, fileparts, load_list_from_folder, load_image
 from xinshuo_math import bboxes_from_mask
+from xinshuo_images import rgb2gray
 from xinshuo_miscellaneous import is_path_exists, islist, find_unique_common_from_lists
-from xinshuo_visualization import visualize_image_with_bbox_mask
+from xinshuo_visualization import visualize_image_with_bbox_mask, visualize_image
 from xinshuo_visualization.python.private import save_vis_close_helper
 try:
     import PIL.Image     as Image
@@ -31,23 +32,20 @@ class KITTIConfig(Config):
 #  Dataset Loader
 ############################################################
 class KITTIDataset(General_Dataset):
-    def __init__(self, dataset_dir, split, gttype):
+    def __init__(self, dataset_dir, split):
         '''
         create a subset of the CityScape dataset
 
         dataset_dir: The root directory of the dataset.
-        subset: What to load (train, val)
+        subset: What to load (training, testing)
         '''
         super(KITTIDataset, self).__init__()
-        assert split == 'train' or split == 'val', 'the subset can be either train or val'
-        assert gttype == 'gtFine' or gttype == 'gtCoarse', 'the type of gt data is not good'
-
+        assert split == 'training' or split == 'testing', 'the subset can be either training or testing'
         self.dataset_dir = dataset_dir
         self.split = split
-        self.gttype = gttype
 
-        self.image_dir = os.path.join(dataset_dir, 'leftImg8bit', split)
-        self.anno_dir = os.path.join(dataset_dir, gttype, split)
+        self.image_dir = os.path.join(dataset_dir, split, 'image_2')
+        self.anno_dir = os.path.join(dataset_dir, split, 'instance')
         self.images_dict = self.sweep_data()
 
     def get_image_ids(self, class_ids):
@@ -70,49 +68,22 @@ class KITTIDataset(General_Dataset):
 
     def sweep_data(self, encoding='ids'):
         '''
-        sweep the data and return the dictionary of infomation for every images
+        sweep the data and return the dictionary of ground truth infomation for every images
 
         outputs:
             images_dict:        a dictionary of info, keys are the image ids, values are a dictionary {'width':, 'height':, 'ids': a list of object ids contained}
         '''
         print('loading annotations into memory from %s...' % self.anno_dir)
-        anno_list, num_anno = load_list_from_folder(self.anno_dir, ext_filter=['.json'], recursive=True, depth=2)
+        anno_list, num_anno = load_list_from_folder(self.anno_dir, ext_filter=['.png'], recursive=True, depth=2)
         print('number of annotations has been loaded: %d' % num_anno)
         images_dict = {}
         for anno_tmp in anno_list:
-            _, filename, _ = fileparts(anno_tmp)
-            image_id = filename.split('_gt')[0]
-            anno_data = CityScapeAnnotation()
-            anno_data.fromJsonFile(anno_tmp)
-            obj_type_list = []
-            for obj in anno_data.objects:
-                label = obj.label
-
-                if obj.deleted: continue            # If the object is deleted, skip it
-
-                # if the label is not known, but ends with a 'group' (e.g. cargroup) try to remove the s and see if that works
-                # also we know that this polygon describes a group
-                # TODO: ?????? what is the group
-                isGroup = False
-                if (not label in cityscape_name2label) and label.endswith('group'):
-                    label = label[:-len('group')]
-                    isGroup = True
-                if not label in cityscape_name2label:
-                    # printError('Label {} not known.'.format(label))
-                    continue
-                labelTuple = cityscape_name2label[label]          # the label tuple
-
-                # get the class ID
-                if encoding == 'ids': id_tmp = labelTuple.id
-                elif encoding == 'trainIds': id_tmp = labelTuple.trainId
-
-                # if id_tmp in ignore_id_list: continue
-                obj_type_list.append(id_tmp)
-
-            obj_type_list = list(set(obj_type_list))
-            image_data = {'width': anno_data.imgWidth, 'height': anno_data.imgHeight, 'ids': obj_type_list}
+            _, image_id, _ = fileparts(anno_tmp)
+            img_shape, class_ids = self.anno2mask(anno_tmp, run_fast=True)
+            class_ids = list(set(class_ids))
+            image_data = {'width': img_shape[0], 'height': img_shape[1], 'ids': class_ids}
             images_dict[image_id] = image_data
-
+            
         return images_dict
 
     def load_data(self, class_ids=None):
@@ -135,17 +106,15 @@ class KITTIDataset(General_Dataset):
             image_ids = list(set(image_ids))        # Remove `1duplicates
         else: 
             print('loading all data')
-            class_ids = sorted(cityscape_id2label.keys())    
+            class_ids = sorted(kitti_id2label.keys())    
             image_ids = sorted(self.images_dict.keys())  # All images
-            # print(image_ids[0: 5])
         print('number of images for the requested id added to the dataset is %d' % len(image_ids))
 
         # add all images and classes into the dataset
-        for id_tmp in class_ids: self.add_class('cityscape', id_tmp, cityscape_id2label[id_tmp].name)          # Add classes
+        for id_tmp in class_ids: self.add_class('kitti', id_tmp, kitti_id2label[id_tmp].name)          # Add classes
         for id_tmp in image_ids:             # Add images
-            city_tmp = id_tmp.split('_')[0]
-            self.add_image('cityscape', image_id=id_tmp, path=os.path.join(self.image_dir, city_tmp, id_tmp+'_leftImg8bit.png'), width=self.images_dict[id_tmp]['width'], 
-                height=self.images_dict[id_tmp]['height'], annotation_file=os.path.join(self.anno_dir, city_tmp, id_tmp+'_%s_polygons.json' % self.gttype))
+            self.add_image('kitti', image_id=id_tmp, path=os.path.join(self.image_dir, id_tmp+'.png'), width=self.images_dict[id_tmp]['width'], 
+                height=self.images_dict[id_tmp]['height'], annotation_file=os.path.join(self.anno_dir, id_tmp+'.png'))
 
     def load_mask(self, image_index):
         '''
@@ -160,16 +129,14 @@ class KITTIDataset(General_Dataset):
         '''
         
         image_info_tmp = self.image_info[image_index]
-        if image_info_tmp['source'] != 'cityscape': return super(CityScapeDataset, self).load_mask(image_index)
+        if image_info_tmp['source'] != 'kitti': return super(KITTIDataset, self).load_mask(image_index)
 
         annotation_file = image_info_tmp['annotation_file']
-        # print(type(annotation_file))
-
         return self.anno2mask(annotation_file, image_index)
 
-    def anno2mask(self, annotation_file, image_index, encoding='ids'):
+    def anno2mask(self, annotation_file, image_index=0, run_fast=False):
         '''
-        convert an annotation file from Cityscapes to an array of mask images and its corresponding ids
+        convert an annotation file from KITTI to an array of mask images and its corresponding ids
 
         parameters:
             annotation_file:        a path to the annotation file corresponding to an image
@@ -178,57 +145,28 @@ class KITTIDataset(General_Dataset):
             masks:                  A uint8 array of shape [height, width, num_instances] with one mask per instance.
             class_ids:              a 1D int32 array of class IDs of the instance masks.
         '''
-        anno_data = CityScapeAnnotation()
-        anno_data.fromJsonFile(annotation_file)
-        size = (anno_data.imgWidth, anno_data.imgHeight)          # the size of the image
+        label_img = np.array(Image.open(annotation_file))
+        size = (label_img.shape[1], label_img.shape[0])         # width x height
 
-        # the background
-        # if encoding == 'ids': backgroundId = cityscape_name2label['unlabeled'].id
-        # elif encoding == 'trainIds': backgroundId = cityscape_name2label['unlabeled'].trainId
-        # else:
-            # print("Unknown encoding '{}'".format(encoding))
-            # return None
-
-        masks = []
+        # Loop through all instance ids in instance image
         class_ids = []
-        for obj in anno_data.objects:
-            instanceImg = Image.new('I', size, 0)        # this is the image that we want to create
-            drawer = ImageDraw.Draw(instanceImg)                  # a drawer to draw into the image
-            label   = obj.label
-            polygon = obj.polygon
-            if obj.deleted: continue            # If the object is deleted, skip it
+        masks = []
+        for pixel_id in np.unique(label_img):
+            id_tmp = int(pixel_id // 256)
+            id_tmp = class_mapping_kitti_to_mykitti(id_tmp)
+            if not (id_tmp in kitti_id2label.keys()): continue              # ignore the class we do not care
+            class_ids.append(id_tmp)
 
-            # if the label is not known, but ends with a 'group' (e.g. cargroup) try to remove the s and see if that works
-            # also we know that this polygon describes a group
-            # TODO: ?????? what is the group
-            isGroup = False
-            if (not label in cityscape_name2label) and label.endswith('group'):
-                label = label[:-len('group')]
-                isGroup = True
-            if not label in cityscape_name2label: 
-                # printError( "Label '{}' not known.".format(label) )
-                continue
-            labelTuple = cityscape_name2label[label]          # the label tuple
+            if run_fast: continue
+            mask_tmp = (label_img == pixel_id).astype('uint8')
+            masks.append(mask_tmp)
 
-            # get the class ID
-            if encoding == "ids": id_tmp = labelTuple.id
-            elif encoding == "trainIds": id_tmp = labelTuple.trainId
-            
-            if id_tmp < 0: continue         # If the ID is negative that polygon should not be drawn
-            try:
-                drawer.polygon(polygon, fill=1)
-                mask_instance_tmp = np.array(instanceImg, dtype='uint8')
-                masks.append(mask_instance_tmp)
-                class_ids.append(id_tmp)
-            except:
-                print("Failed to draw polygon with label {} and id {}: {}".format(label,id,polygon))
-                raise
-
+        if run_fast: return size, class_ids
         if class_ids:
             masks = np.stack(masks, axis=2)
             class_ids = np.array(class_ids, dtype=np.int32)
             return masks, class_ids
-        else: return super(CityScapeDataset, self).load_mask(image_index)           # TODO, what happened here
+        else: return super(KITTIDataset, self).load_mask(image_index)           # TODO, what happened here
 
     def visualization(self, image_index, save_dir):
         '''
@@ -240,6 +178,6 @@ class KITTIDataset(General_Dataset):
 
         masks, class_ids = self.load_mask(image_index)
         bbox = bboxes_from_mask(masks)                           # TLBR format, N x 4
-        fig, _ = visualize_image_with_bbox_mask(image, boxes=bbox, masks=masks, class_ids=class_ids, class_names=['BG'] + class_names)
+        fig, _ = visualize_image_with_bbox_mask(image, boxes=bbox, masks=masks, class_ids=class_ids, class_names=['BG'] + kitti_class_names)
         save_path_tmp = os.path.join(save_dir, filename+'.jpg')
         save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)

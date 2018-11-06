@@ -8,7 +8,7 @@ from xinshuo_io import save_image, mkdir_if_missing
 
 dataset_dir = '/media/xinshuo/Data/Datasets/Cityscapes'
 gttype='gtFine'
-split = 'val'
+split = 'train'
 
 config = CityscapeConfig()
 dataset_cityscape = CityScapeDataset(dataset_dir, split=split, gttype=gttype)
