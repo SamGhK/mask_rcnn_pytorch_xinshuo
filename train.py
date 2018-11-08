@@ -25,8 +25,9 @@ if __name__ == '__main__':
 
     # Configurations
     if args.dataset == 'coco': config = CocoConfig()
-    elif args.dataset == 'cityscape': config = CityscapeConfig()
-    else: config = KITTIConfig()
+    elif args.dataset == 'cityscapes': config = CityscapeConfig()
+    elif args.dataset == 'kitti': config = KITTIConfig()
+    else: assert False, 'error'
     model = MaskRCNN(config=config, model_dir=args.save_dir)
     if config.GPU_COUNT: model = model.cuda()
 
@@ -47,7 +48,7 @@ if __name__ == '__main__':
     if args.dataset == 'coco':
         dataset_train = CocoDataset()
         dataset_train.load_data(args.data_dir, split='train')
-    elif args.dataset == 'cityscape':
+    elif args.dataset == 'cityscapes':
         dataset_train = CityScapeDataset(args.data_dir, split='train', gttype='gtFine')
         dataset_train.load_data()
     else:
@@ -59,7 +60,7 @@ if __name__ == '__main__':
     if args.dataset == 'coco':
         dataset_val = CocoDataset()
         dataset_val.load_data(args.data_dir, split='val')
-    elif args.dataset == 'cityscape':
+    elif args.dataset == 'cityscapes':
         dataset_val = CityScapeDataset(args.data_dir, split='val', gttype='gtFine')
         dataset_val.load_data()
     else:
