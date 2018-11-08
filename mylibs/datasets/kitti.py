@@ -4,7 +4,7 @@
 # CityScape dataset loader
 
 import os, time, numpy as np, copy, cv2
-from mylibs import General_Dataset, Config, kitti_class_names, kitti_id2label, class_mapping_kitti_to_mykitti
+from mylibs import General_Dataset, Config, kitti_class_names, kitti_id2label, class_mapping_kitti_to_mykitti_training
 from xinshuo_io import mkdir_if_missing, fileparts, load_list_from_folder, load_image
 from xinshuo_math import bboxes_from_mask
 from xinshuo_images import rgb2gray
@@ -27,7 +27,8 @@ class KITTIConfig(Config):
     NAME = 'kitti'          # Give the configuration a recognizable name
     IMAGES_PER_GPU = 1
     NUM_CLASSES = 1 + len(kitti_class_names)        # Number of classes (including background)
-
+    STEPS_PER_EPOCH = 200
+    
 ############################################################
 #  Dataset Loader
 ############################################################
@@ -153,7 +154,7 @@ class KITTIDataset(General_Dataset):
         masks = []
         for pixel_id in np.unique(label_img):
             id_tmp = int(pixel_id // 256)
-            id_tmp = class_mapping_kitti_to_mykitti(id_tmp)
+            id_tmp = class_mapping_kitti_to_mykitti_training(id_tmp)
             if not (id_tmp in kitti_id2label.keys()): continue              # ignore the class we do not care
             class_ids.append(id_tmp)
 

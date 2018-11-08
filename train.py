@@ -2,7 +2,7 @@
 # email: xinshuo.weng@gmail.com
 
 import argparse, os, torch, random, numpy as np
-from mylibs import MaskRCNN, cityscape_class_names, CocoConfig, CocoDataset, CityscapeConfig, CityScapeDataset, Config
+from mylibs import MaskRCNN, cityscape_class_names, CocoConfig, CocoDataset, CityscapeConfig, CityScapeDataset, Config, KITTIDataset, KITTIConfig
 from xinshuo_miscellaneous import print_log
 torch.backends.cudnn.enabled = True
 
@@ -21,11 +21,12 @@ if __name__ == '__main__':
     np.random.seed(args.manualSeed)
     torch.manual_seed(args.manualSeed)
     torch.cuda.manual_seed_all(args.manualSeed)
-    assert args.dataset == 'coco' or args.dataset == 'cityscapes', 'wrong dataset name'
+    assert args.dataset == 'coco' or args.dataset == 'cityscapes' or args.dataset == 'kitti', 'wrong dataset name'
 
     # Configurations
     if args.dataset == 'coco': config = CocoConfig()
-    else: config = CityscapeConfig()
+    elif args.dataset == 'cityscape': config = CityscapeConfig()
+    else: config = KITTIConfig()
     model = MaskRCNN(config=config, model_dir=args.save_dir)
     if config.GPU_COUNT: model = model.cuda()
 
@@ -35,7 +36,6 @@ if __name__ == '__main__':
     print_log('Dataset: %s' % args.dataset, model.log_file)
     print_log('Save Directory: %s' % args.save_dir, model.log_file)
     if args.model:
-        # if args.model.lower() == "coco": model_path = COCO_MODEL_PATH
         if args.model.lower() == 'imagenet': model_path = config.IMAGENET_MODEL_PATH         # Start from ImageNet trained weights
         elif args.model.lower() == 'last': model_path = model.find_last()[1]        # Find last trained weights
         else: model_path = args.model
@@ -47,8 +47,11 @@ if __name__ == '__main__':
     if args.dataset == 'coco':
         dataset_train = CocoDataset()
         dataset_train.load_data(args.data_dir, split='train')
-    else:
+    elif args.dataset == 'cityscape':
         dataset_train = CityScapeDataset(args.data_dir, split='train', gttype='gtFine')
+        dataset_train.load_data()
+    else:
+        dataset_train = KITTIDataset(args.data_dir, split='training')
         dataset_train.load_data()
     dataset_train.prepare()
 
@@ -56,15 +59,24 @@ if __name__ == '__main__':
     if args.dataset == 'coco':
         dataset_val = CocoDataset()
         dataset_val.load_data(args.data_dir, split='val')
-    else:
+    elif args.dataset == 'cityscape':
         dataset_val = CityScapeDataset(args.data_dir, split='val', gttype='gtFine')
+        dataset_val.load_data()
+    else:
+        # dataset_val = CityScapeDataset('/media/xinshuo/Data/Datasets/Cityscapes', split='val', gttype='gtFine')
+        dataset_val = KITTIDataset(args.data_dir, split='training')
         dataset_val.load_data()
     dataset_val.prepare()
 
     print_log("Training network heads", model.log_file)
-    model.train_model(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE, num_epochs=20, layers='heads')
+    model.train_model(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE, num_epochs=10, layers='heads')
     print_log("Fine tune Resnet stage 4 and up", model.log_file)
-    model.train_model(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE, num_epochs=40, layers='4+')
+    model.train_model(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE, num_epochs=30, layers='4+')
     print_log("Fine tune all layers", model.log_file)
-    model.train_model(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE, num_epochs=160, layers='all')
+    model.train_model(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE / 10, num_epochs=160, layers='all')
     model.log_file.close()
+
+    # for finetnuing on kitti
+    # print_log("Fine tune all layers", model.log_file)
+    # model.train_model(dataset_train, dataset_val, learning_rate=config.LEARNING_RATE / 10, num_epochs=40, layers='all')
+    # model.log_file.close()

@@ -1,4 +1,4 @@
 from .mask_rcnn_config import Config
 from .cityscape_config import cityscape_class_names, cityscape_name2label, cityscape_id2label, class_mapping_cityscape_to_kitti, CityScapeAnnotation
-from .kitti_config import kitti_class_names, kitti_name2label, kitti_id2label, class_mapping_kitti_to_mykitti
+from .kitti_config import kitti_class_names, kitti_name2label, kitti_id2label, class_mapping_kitti_to_mykitti_training, class_mapping_kitti_to_mykitti_testing
 from .coco_config import coco_class_names, class_mapping_coco_to_kitti

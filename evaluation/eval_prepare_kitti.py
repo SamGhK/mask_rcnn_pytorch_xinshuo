@@ -2,15 +2,16 @@
 # email: xinshuo.weng@gmail.com
 import os, torch, numpy as np, matplotlib.pyplot as plt
 if "DISPLAY" not in os.environ: plt.switch_backend('agg')
-from mylibs import MaskRCNN, cityscape_class_names, Config, coco_class_names, class_mapping_coco_to_kitti, class_mapping_cityscape_to_kitti
+from mylibs import MaskRCNN, cityscape_class_names, Config, coco_class_names, class_mapping_coco_to_kitti, class_mapping_cityscape_to_kitti, kitti_class_names, class_mapping_kitti_to_mykitti_testing
 from xinshuo_io import load_list_from_file, fileparts, mkdir_if_missing, load_image, save_image
 from xinshuo_visualization import visualize_image_with_bbox_mask
 from xinshuo_visualization.python.private import save_vis_close_helper
 from xinshuo_miscellaneous import convert_secs2time, Timer, get_timestring, print_log
 
-train_dataset = 'cityscape'
-epoch_list_to_evaluate = [20, 40, 60, 80, 100, 120, 140, 160]
-model_folder = 'cityscape20181104T1323'
+train_dataset = 'kitti'
+# epoch_list_to_evaluate = [160, 140, 120, 100, 80, 60, 40, 20]
+epoch_list_to_evaluate = [5, 10, 15, 20, 25, 30, 35, 40]
+model_folder = 'kitti20181107T1419'
 split = 'val' 		# train, val, trainval, test
 object_interest = {1: 'Pedestrian', 2: 'Car', 3: 'Cyclist'}
 kitti_dir = '/media/xinshuo/Data/Datasets/KITTI'
@@ -20,16 +21,19 @@ root_dir = os.getcwd()                      # Root directory of the project
 # Index of the class in the list is its ID. For example, to get ID of # the teddy bear class, use: class_names.index('teddy bear')
 if train_dataset == 'coco': class_names_bg = coco_class_names
 elif train_dataset == 'cityscape': class_names_bg = ['BG'] + cityscape_class_names
+elif train_dataset == 'kitti': class_names_bg = ['BG'] + kitti_class_names
 else: assert False, 'error'
 
 class InferenceConfig(Config):
-    # Set batch size to 1 since we'll be running inference on one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
-    NAME = 'evaluate_%s' % train_dataset
-    GPU_COUNT = 1
-    IMAGES_PER_GPU = 1
-    # DETECTION_MIN_CONFIDENCE = 0
-    if train_dataset == 'coco': NUM_CLASSES = 1 + 80
-    else: NUM_CLASSES = 1 + len(cityscape_class_names)
+	# Set batch size to 1 since we'll be running inference on one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
+	NAME = 'evaluate_%s' % train_dataset
+	GPU_COUNT = 1
+	IMAGES_PER_GPU = 1
+	# DETECTION_MIN_CONFIDENCE = 0
+	if train_dataset == 'coco': NUM_CLASSES = 1 + 80
+	elif train_dataset == 'cityscape': NUM_CLASSES = 1 + len(cityscape_class_names)
+	elif train_dataset == 'kitti': NUM_CLASSES = 1 + len(kitti_class_names)
+	else: assert False, 'error'
 config = InferenceConfig()
 
 for epoch in epoch_list_to_evaluate:
@@ -48,6 +52,7 @@ for epoch in epoch_list_to_evaluate:
 	##--------------------------------- Model Directory ----------------------------------##
 	if train_dataset == 'coco': model_path = os.path.join(root_dir, '../models/mask_rcnn_coco.pth')    			# Path to trained weights file
 	elif train_dataset == 'cityscape': model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/%s/mask_rcnn_cityscape_%04d.pth' % (model_folder, epoch)
+	elif train_dataset == 'kitti': model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/%s/mask_rcnn_cityscape_%04d.pth' % (model_folder, epoch)
 	else: model_path = os.path.join(root_dir, 'resnet50_imagenet.pth')    		# Path to trained weights from Imagenet
 	model = MaskRCNN(model_dir=save_dir, config=config)			# Create model object.
 	if config.GPU_COUNT: model = model.cuda()
@@ -95,13 +100,20 @@ for epoch in epoch_list_to_evaluate:
 		print(print_str)
 		print_log('%s, saving to %s' % (print_str, filename), log=log_file, display=False)
 
+
+		print(num_instances)
+
 		# save data for each individual instances
 		for instance_index in range(num_instances):
+			print(instance_index)
+			print(r['class_ids'])
 			class_id = r['class_ids'][instance_index]
-			
+			# class_id = 1
+
 			# map the class to KITTI
 			if train_dataset == 'coco': class_id = class_mapping_coco_to_kitti(class_id)
 			elif train_dataset == 'cityscape': class_id = class_mapping_cityscape_to_kitti(class_id)
+			elif train_dataset == 'kitti': class_id = class_mapping_kitti_to_mykitti_testing(class_id)
 			else: assert False, 'error'
 			if not (class_id in object_interest.keys()): continue
 			class_name_tmp = object_interest[class_id]
