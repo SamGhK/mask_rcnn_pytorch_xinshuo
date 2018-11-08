@@ -2,23 +2,23 @@
 # email: xinshuo.weng@gmail.com
 import os, torch, numpy as np, matplotlib.pyplot as plt
 if "DISPLAY" not in os.environ: plt.switch_backend('agg')
-from mylibs import MaskRCNN, class_names, Config, class_mapping_coco_to_kitti, class_mapping_cityscape_to_kitti
+from mylibs import MaskRCNN, coco_class_names, Config, cityscape_class_names
 from xinshuo_io import load_list_from_folder, fileparts, mkdir_if_missing, load_image, save_image
 from xinshuo_visualization import visualize_image_with_bbox_mask
 from xinshuo_visualization.python.private import save_vis_close_helper
-from xinshuo_miscellaneous import convert_secs2time, Timer
+from xinshuo_miscellaneous import convert_secs2time, Timer, print_log
 
 train_dataset = 'coco'
 root_dir = os.getcwd()                      # Root directory of the project
 
 # Index of the class in the list is its ID. For example, to get ID of # the teddy bear class, use: class_names.index('teddy bear')
-if dataset == 'coco': class_names_bg = coco_class_names
-elif dataset == 'cityscape': class_names_bg = ['BG'] + cityscape_class_names
+if train_dataset == 'coco': class_names_bg = coco_class_names
+elif train_dataset == 'cityscape': class_names_bg = ['BG'] + cityscape_class_names
 else: assert False, 'error'
 
 class InferenceConfig(Config):
     # Set batch size to 1 since we'll be running inference on one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
-    NAME = 'evaluate_%s' % dataset
+    NAME = 'demo_%s' % train_dataset
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
     # DETECTION_MIN_CONFIDENCE = 0
@@ -27,14 +27,22 @@ class InferenceConfig(Config):
 config = InferenceConfig()
 
 ##--------------------------------- Data Directory ----------------------------------##
-# images_dir = os.path.join(root_dir, 'images')    # Directory of images to run detection on
-# save_dir = os.path.join(root_dir, 'tmp/results'); mkdir_if_missing(save_dir)
-data_dir = '/media/xinshuo/Data/Datasets/KITTI/object/training'
-images_dir = os.path.join(data_dir, 'image_2')
-save_dir = os.path.join(data_dir, 'results/mask_preprocessed'); mkdir_if_missing(save_dir)
+# KITTI
+# data_dir = '/media/xinshuo/Data/Datasets/KITTI/object/training'
+# images_dir = os.path.join(data_dir, 'image_2')
+# save_dir = os.path.join(data_dir, 'results/mask_preprocessed'); mkdir_if_missing(save_dir)
+
+# Cityscape
 # data_dir = '/media/xinshuo/Data/Datasets/Cityscapes/leftImg8bit'
 # images_dir = os.path.join(data_dir, 'val/frankfurt')
 # save_dir = os.path.join(data_dir, 'results/mask_preprocessed_cityscape'); mkdir_if_missing(save_dir)
+
+# Shimizu
+folder_name = 'Q_C0006_330-360sec'
+data_dir = '/media/xinshuo/Data/Datasets/shimizu'
+images_dir = os.path.join(data_dir, 'images', folder_name)
+save_dir = os.path.join(data_dir, 'results', folder_name); mkdir_if_missing(save_dir)
+
 vis_dir = os.path.join(save_dir, 'visualization'); mkdir_if_missing(vis_dir)
 mask_dir = os.path.join(save_dir, 'masks'); mkdir_if_missing(mask_dir)
 detection_result_filepath = os.path.join(save_dir, 'mask_results.txt'); detection_results_file = open(detection_result_filepath, 'w')
@@ -42,14 +50,16 @@ log_file = os.path.join(save_dir, 'log.txt'); log_file = open(log_file, 'w')
 
 ##--------------------------------- Model Directory ----------------------------------##
 # model_path = os.path.join(root_dir, 'resnet50_imagenet.pth')    # Path to trained weights file
-model_path = os.path.join(root_dir, 'models/mask_rcnn_coco.pth')    # Path to trained weights file
+if train_dataset == 'coco': model_path = os.path.join(root_dir, 'models/mask_rcnn_coco.pth')    # Path to trained weights file
+else: assert False, 'error'
+
 model = MaskRCNN(model_dir=save_dir, config=config)		# Create model object.
 if config.GPU_COUNT: model = model.cuda()
 model.load_weights(model_path)    # Load weights 
 
 ##--------------------------------- Testing ----------------------------------##
 image_list, num_list = load_list_from_folder(images_dir)
-print('testing results on %d images' % num_list) 
+print_log('testing results on %d images' % num_list, log=log_file) 
 count = 1
 timer = Timer(); timer.tic()
 for image_file_tmp in image_list:
@@ -58,7 +68,7 @@ for image_file_tmp in image_list:
 	results = model.detect([image])		# inference, results is a dictionary
 	if len(results) == 0: 
 		count += 1
-		print('testing %d/%d, no detected results' % (count, num_list))
+		print_log('Mask-RCNN demo: testing %d/%d, no detected results!!!!!' % (count, num_list), log=log_file)
 		continue
 
 	# visualize and save results
@@ -68,7 +78,7 @@ for image_file_tmp in image_list:
 	bboxes_tmp[:, [0, 1]] = bboxes_tmp[:, [1, 0]]
 	bboxes_tmp[:, [2, 3]] = bboxes_tmp[:, [3, 2]]			# x1, y1, x2, y2 format	
 
-	fig, _ = visualize_image_with_bbox_mask(image, boxes=bboxes_tmp, masks=r['masks'], class_ids=r['class_ids'], class_names=class_names_bg, scores=r['scores'])
+	fig, _ = visualize_image_with_bbox_mask(image, boxes=bboxes_tmp, masks=r['masks'], class_ids=r['class_ids'], class_names=class_names_bg, scores=r['scores'], class_to_plot=[1])
 	save_path_tmp = os.path.join(vis_dir, filename+'.jpg')
 	save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)
 
