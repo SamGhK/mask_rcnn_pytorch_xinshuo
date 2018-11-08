@@ -11,7 +11,7 @@ from xinshuo_miscellaneous import convert_secs2time, Timer, get_timestring, prin
 train_dataset = 'kitti'
 # epoch_list_to_evaluate = [160, 140, 120, 100, 80, 60, 40, 20]
 epoch_list_to_evaluate = [5, 10, 15, 20, 25, 30, 35, 40]
-model_folder = 'kitti20181107T1419'
+model_folder = 'kitti20181107T1201'
 split = 'val' 		# train, val, trainval, test
 object_interest = {1: 'Pedestrian', 2: 'Car', 3: 'Cyclist'}
 kitti_dir = '/media/xinshuo/Data/Datasets/KITTI'
@@ -52,7 +52,7 @@ for epoch in epoch_list_to_evaluate:
 	##--------------------------------- Model Directory ----------------------------------##
 	if train_dataset == 'coco': model_path = os.path.join(root_dir, '../models/mask_rcnn_coco.pth')    			# Path to trained weights file
 	elif train_dataset == 'cityscape': model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/%s/mask_rcnn_cityscape_%04d.pth' % (model_folder, epoch)
-	elif train_dataset == 'kitti': model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/%s/mask_rcnn_cityscape_%04d.pth' % (model_folder, epoch)
+	elif train_dataset == 'kitti': model_path = '/media/xinshuo/Data/models/mask_rcnn_pytorch/%s/mask_rcnn_kitti_%04d.pth' % (model_folder, epoch)
 	else: model_path = os.path.join(root_dir, 'resnet50_imagenet.pth')    		# Path to trained weights from Imagenet
 	model = MaskRCNN(model_dir=save_dir, config=config)			# Create model object.
 	if config.GPU_COUNT: model = model.cuda()
@@ -99,16 +99,9 @@ for epoch in epoch_list_to_evaluate:
 		print_str = 'KITTI Eval: trained on %s, %d epochs, %d/%d, detected %d items, EP: %s, ETA: %s' % (train_dataset, epoch, count, num_list, num_instances, elapsed_str, remaining_str)
 		print(print_str)
 		print_log('%s, saving to %s' % (print_str, filename), log=log_file, display=False)
-
-
-		print(num_instances)
-
 		# save data for each individual instances
 		for instance_index in range(num_instances):
-			print(instance_index)
-			print(r['class_ids'])
 			class_id = r['class_ids'][instance_index]
-			# class_id = 1
 
 			# map the class to KITTI
 			if train_dataset == 'coco': class_id = class_mapping_coco_to_kitti(class_id)

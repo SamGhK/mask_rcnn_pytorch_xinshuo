@@ -27,7 +27,7 @@ class KITTIConfig(Config):
     NAME = 'kitti'          # Give the configuration a recognizable name
     IMAGES_PER_GPU = 1
     NUM_CLASSES = 1 + len(kitti_class_names)        # Number of classes (including background)
-    STEPS_PER_EPOCH = 200
+    # STEPS_PER_EPOCH = 200
     
 ############################################################
 #  Dataset Loader
