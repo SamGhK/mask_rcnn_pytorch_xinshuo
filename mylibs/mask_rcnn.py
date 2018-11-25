@@ -552,7 +552,8 @@ class MaskRCNN(nn.Module):
         if is_path_exists(filepath):
             state_dict = torch.load(filepath)
             self.load_state_dict(state_dict, strict=False)
-        else: print("Weight file not found ...")
+        else: 
+            assert False, "Weight file not found ..."
         # self.set_log_dir(filepath)
 
     def build(self, config):

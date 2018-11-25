@@ -10,8 +10,10 @@ from xinshuo_miscellaneous import convert_secs2time, Timer, get_timestring, prin
 
 train_dataset = 'kitti'
 # epoch_list_to_evaluate = [160, 140, 120, 100, 80, 60, 40, 20]
-epoch_list_to_evaluate = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160]
-model_folder = 'kitti20181107T2233'
+epoch_list_to_evaluate = [5, 10, 15, 20, 25, 30, 35, 40]
+# epoch_list_to_evaluate = [40, 45, 50, 55, 60, 65, 70, 75, 80]
+# epoch_list_to_evaluate = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160]
+model_folder = 'kitti20181113T0837_13class_finetuned'
 split = 'val' 		# train, val, trainval, test
 object_interest = {1: 'Pedestrian', 2: 'Car', 3: 'Cyclist'}
 kitti_dir = '/media/xinshuo/Data/Datasets/KITTI'

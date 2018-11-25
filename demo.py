@@ -4,7 +4,7 @@ import os, torch, numpy as np, matplotlib.pyplot as plt
 if "DISPLAY" not in os.environ: plt.switch_backend('agg')
 from mylibs import MaskRCNN, coco_class_names, Config, cityscape_class_names
 from xinshuo_io import load_list_from_folder, fileparts, mkdir_if_missing, load_image, save_image
-from xinshuo_visualization import visualize_image_with_bbox_mask
+from xinshuo_visualization import visualize_image_with_bbox_mask, visualize_image
 from xinshuo_visualization.python.private import save_vis_close_helper
 from xinshuo_miscellaneous import convert_secs2time, Timer, print_log
 
@@ -21,7 +21,7 @@ class InferenceConfig(Config):
     NAME = 'demo_%s' % train_dataset
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
-    # DETECTION_MIN_CONFIDENCE = 0
+    DETECTION_MIN_CONFIDENCE = 0
     if train_dataset == 'coco': NUM_CLASSES = 1 + 80
     else: NUM_CLASSES = 1 + len(class_names)
 config = InferenceConfig()
@@ -39,6 +39,7 @@ config = InferenceConfig()
 
 # Shimizu
 folder_name = 'Q_C0006_330-360sec'
+# folder_name = 'Q_C0006_480-510sec'
 data_dir = '/media/xinshuo/Data/Datasets/shimizu'
 images_dir = os.path.join(data_dir, 'images', folder_name)
 save_dir = os.path.join(data_dir, 'results', folder_name); mkdir_if_missing(save_dir)
@@ -80,6 +81,7 @@ for image_file_tmp in image_list:
 
 	fig, _ = visualize_image_with_bbox_mask(image, boxes=bboxes_tmp, masks=r['masks'], class_ids=r['class_ids'], class_names=class_names_bg, scores=r['scores'], class_to_plot=[1])
 	save_path_tmp = os.path.join(vis_dir, filename+'.jpg')
+	# visualize_image(image, save_path=save_path_tmp)
 	save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)
 
 	elapsed = timer.toc(average=False)

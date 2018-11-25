@@ -1,2 +1,3 @@
 #/bin/bash
-python3 train.py --dataset=kitti --data_dir=/media/xinshuo/Data/Datasets/KITTI/semantics --model=/media/xinshuo/Data/models/mask_rcnn_pytorch/cityscape20181018T0035/mask_rcnn_cityscape_0070.pth
+# python3 train.py --dataset=kitti --data_dir=/media/xinshuo/Data/Datasets/KITTI/semantics --model=/media/xinshuo/Data/models/mask_rcnn_pytorch/cityscape20181018T0035_tenclass_successful/mask_rcnn_cityscape_0070.pth
+python3 train.py --dataset=kitti --data_dir=/media/xinshuo/Data/Datasets/KITTI/semantics --model=/media/xinshuo/Data/models/mask_rcnn_pytorch/cityscape20181108T0903_13class/mask_rcnn_cityscape_0060.pth
