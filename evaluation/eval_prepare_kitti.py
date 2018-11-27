@@ -2,7 +2,7 @@
 # email: xinshuo.weng@gmail.com
 import os, torch, numpy as np, matplotlib.pyplot as plt
 if "DISPLAY" not in os.environ: plt.switch_backend('agg')
-from mylibs import MaskRCNN, cityscape_class_names, Config, coco_class_names, class_mapping_coco_to_kitti, class_mapping_cityscape_to_kitti, kitti_class_names, class_mapping_kitti_to_mykitti_testing
+from mask_rcnn_pytorch.mylibs import MaskRCNN, cityscape_class_names, Config, coco_class_names, class_mapping_coco_to_kitti, class_mapping_cityscape_to_kitti, kitti_class_names, class_mapping_kitti_to_mykitti_testing
 from xinshuo_io import load_list_from_file, fileparts, mkdir_if_missing, load_image, save_image
 from xinshuo_visualization import visualize_image_with_bbox_mask
 from xinshuo_visualization.python.private import save_vis_close_helper
@@ -10,15 +10,17 @@ from xinshuo_miscellaneous import convert_secs2time, Timer, get_timestring, prin
 
 train_dataset = 'kitti'
 # epoch_list_to_evaluate = [160, 140, 120, 100, 80, 60, 40, 20]
-epoch_list_to_evaluate = [5, 10, 15, 20, 25, 30, 35, 40]
+# epoch_list_to_evaluate = [5, 10, 15, 20, 25, 30, 35, 40]
+epoch_list_to_evaluate = [20]
 # epoch_list_to_evaluate = [40, 45, 50, 55, 60, 65, 70, 75, 80]
 # epoch_list_to_evaluate = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160]
-model_folder = 'kitti20181113T0837_13class_finetuned'
+model_folder = 'kitti20181113T0009_10class_finetuned'
 split = 'val' 		# train, val, trainval, test
 object_interest = {1: 'Pedestrian', 2: 'Car', 3: 'Cyclist'}
 kitti_dir = '/media/xinshuo/Data/Datasets/KITTI'
 data_dir = os.path.join(kitti_dir, 'object/training')
 root_dir = os.getcwd()                      # Root directory of the project
+# img_height_threshold = 25
 
 # Index of the class in the list is its ID. For example, to get ID of # the teddy bear class, use: class_names.index('teddy bear')
 if train_dataset == 'coco': class_names_bg = coco_class_names
@@ -66,6 +68,7 @@ for epoch in epoch_list_to_evaluate:
 	print_log('KITTI Evaluation: testing results on %d images' % num_list, log=log_file) 
 	count = 1
 	timer = Timer(); timer.tic()
+	# count_skipped = 0
 	for id_tmp in id_list:
 		image_file_tmp = os.path.join(images_dir, id_tmp+'.png')
 		_, filename, _ = fileparts(image_file_tmp)
@@ -121,20 +124,26 @@ for epoch in epoch_list_to_evaluate:
 			mask_savepath_tmp = os.path.join(mask_dir_frame, 'instance_%04d'%instance_index+'.jpg')		
 			save_image(mask_tmp, save_path=mask_savepath_tmp)
 
+			# xmin, ymin, xmax, ymax = bbox_tmp
+			# if ymax - ymin < img_height_threshold:
+				# count_skipped += 1 
+				# continue
+
 			# save info for 2d bbox evaluation
-			bbox_eval_str = '%s -1 -1 -10 %.2f %.2f %.2f %.2f 1 1 1 0 0 0 0 %.4f\n' % (class_name_tmp, bbox_tmp[0], bbox_tmp[1], bbox_tmp[2], bbox_tmp[3], score_tmp)
+			bbox_eval_str = '%s -1 -1 -10 %.2f %.2f %.2f %.2f 1 1 1 0 0 0 0 %.2f\n' % (class_name_tmp, bbox_tmp[0], bbox_tmp[1], bbox_tmp[2], bbox_tmp[3], score_tmp)
 			bbox_eval_file_tmp.write(bbox_eval_str)
 			
 			# save info for the overall detection
-			detection_all_str = '%s %s %.2f %.2f %.2f %.2f %.2f %s\n' % (image_file_tmp, class_id, bbox_tmp[0], bbox_tmp[1], bbox_tmp[2], bbox_tmp[3], score_tmp, mask_savepath_tmp)
+			detection_all_str = '%s %s %.2f %.2f %.2f %.2f %f %s\n' % (image_file_tmp, class_id, bbox_tmp[0], bbox_tmp[1], bbox_tmp[2], bbox_tmp[3], score_tmp, mask_savepath_tmp)
 			detection_results_file.write(detection_all_str)
 
 			# save info for matching
-			label_matching_str = '%s %.2f %.2f %.2f %.2f %.2f %s\n' % (class_name_tmp, bbox_tmp[0], bbox_tmp[1], bbox_tmp[2], bbox_tmp[3], score_tmp, mask_savepath_tmp)
+			label_matching_str = '%s %.2f %.2f %.2f %.2f %f %s\n' % (class_name_tmp, bbox_tmp[0], bbox_tmp[1], bbox_tmp[2], bbox_tmp[3], score_tmp, mask_savepath_tmp)
 			label_matching_file_tmp.write(label_matching_str)
 
 		count += 1
 		bbox_eval_file_tmp.close()
 		label_matching_file_tmp.close()
 
+	# print_log('skipped small instances are %d' % count_skipped, log=log_file)
 	detection_results_file.close()

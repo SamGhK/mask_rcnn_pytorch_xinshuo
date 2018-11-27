@@ -1,7 +1,7 @@
 # Author: Xinshuo Weng
 # email: xinshuo.weng@gmail.com
 import os, time, numpy as np, zipfile, urllib.request, shutil
-from mylibs import General_Dataset, Config
+from mask_rcnn_pytorch.mylibs import General_Dataset, Config
 
 # Download and install the Python COCO tools from https://github.com/waleedka/coco
 # That's a fork from the original https://github.com/pdollar/coco with a bug fix for Python 3.
