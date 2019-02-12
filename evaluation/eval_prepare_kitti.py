@@ -9,16 +9,19 @@ from xinshuo_visualization.python.private import save_vis_close_helper
 from xinshuo_miscellaneous import convert_secs2time, Timer, get_timestring, print_log
 
 train_dataset = 'kitti'
+# train_dataset = 'cityscape'
 # epoch_list_to_evaluate = [160, 140, 120, 100, 80, 60, 40, 20]
-# epoch_list_to_evaluate = [5, 10, 15, 20, 25, 30, 35, 40]
-epoch_list_to_evaluate = [20]
+# epoch_list_to_evaluate = [10, 20, 30, 40, 50, 60, 70]
+epoch_list_to_evaluate = [5, 10, 15, 20, 25, 30, 35, 40]
+# epoch_list_to_evaluate = [80, 90]
 # epoch_list_to_evaluate = [40, 45, 50, 55, 60, 65, 70, 75, 80]
 # epoch_list_to_evaluate = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160]
 model_folder = 'kitti20181113T0009_10class_finetuned'
 split = 'val' 		# train, val, trainval, test
 object_interest = {1: 'Pedestrian', 2: 'Car', 3: 'Cyclist'}
 kitti_dir = '/media/xinshuo/Data/Datasets/KITTI'
-data_dir = os.path.join(kitti_dir, 'object/training')
+if split == 'test': data_dir = os.path.join(kitti_dir, 'object/testing')
+else: data_dir = os.path.join(kitti_dir, 'object/training')
 root_dir = os.getcwd()                      # Root directory of the project
 # img_height_threshold = 25
 
@@ -39,10 +42,11 @@ class InferenceConfig(Config):
 	elif train_dataset == 'kitti': NUM_CLASSES = 1 + len(kitti_class_names)
 	else: assert False, 'error'
 config = InferenceConfig()
+config.DETECTION_MIN_CONFIDENCE = 0
 
 for epoch in epoch_list_to_evaluate:
 	##--------------------------------- Data Directory ----------------------------------##
-	results_name = 'maskrcnn_bbox_detection_results_%s_%s_epoch%d_%s' % (train_dataset, model_folder, epoch, get_timestring())
+	results_name = 'maskrcnn_bbox_detection_results_%s_%s_%s_epoch%d_%s_fulldetection' % (train_dataset, split, model_folder, epoch, get_timestring())
 	split_file = os.path.join(kitti_dir, 'mykitti/object/mysplit/%s.txt' % split)
 	images_dir = os.path.join(data_dir, 'image_2')
 	save_dir = os.path.join(data_dir, 'results/%s' % results_name); mkdir_if_missing(save_dir)
@@ -83,7 +87,7 @@ for epoch in epoch_list_to_evaluate:
 		elapsed_str = convert_secs2time(elapsed)
 		if len(results) == 0: 
 			count += 1
-			print_str = 'KITTI Eval: trained on %s, %d epochs, %d/%d, no detected result!!' % (train_dataset, epoch, count, num_list)
+			print_str = 'KITTI %s: trained on %s, %d epochs, %d/%d, no detected result!!' % (split, train_dataset, epoch, count, num_list)
 			print(print_str)
 			print_log('%s, saving to %s' % (print_str, filename), log=log_file, display=False)	
 			continue
@@ -101,7 +105,7 @@ for epoch in epoch_list_to_evaluate:
 		save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)
 		
 		# logging
-		print_str = 'KITTI Eval: trained on %s, %d epochs, %d/%d, detected %d items, EP: %s, ETA: %s' % (train_dataset, epoch, count, num_list, num_instances, elapsed_str, remaining_str)
+		print_str = 'KITTI %s: trained on %s, %d epochs, %d/%d, detected %d items, EP: %s, ETA: %s' % (split, train_dataset, epoch, count, num_list, num_instances, elapsed_str, remaining_str)
 		print(print_str)
 		print_log('%s, saving to %s' % (print_str, filename), log=log_file, display=False)
 		# save data for each individual instances
@@ -130,7 +134,7 @@ for epoch in epoch_list_to_evaluate:
 				# continue
 
 			# save info for 2d bbox evaluation
-			bbox_eval_str = '%s -1 -1 -10 %.2f %.2f %.2f %.2f 1 1 1 0 0 0 0 %.2f\n' % (class_name_tmp, bbox_tmp[0], bbox_tmp[1], bbox_tmp[2], bbox_tmp[3], score_tmp)
+			bbox_eval_str = '%s -1 -1 -10 %.2f %.2f %.2f %.2f 0 0 0 0 0 0 0 %f\n' % (class_name_tmp, bbox_tmp[0], bbox_tmp[1], bbox_tmp[2], bbox_tmp[3], score_tmp)
 			bbox_eval_file_tmp.write(bbox_eval_str)
 			
 			# save info for the overall detection

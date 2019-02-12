@@ -125,11 +125,22 @@ Label = namedtuple('Label', [
     # Label(  'car'                  , 3 ,       13 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
 # ]
 
+# labels = [
+          # name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
+    # Label(  'person'               , 1 ,       11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
+    # Label(  'rider'                , 2 ,       12 , 'human'           , 6       , True         , False        , (255,  0,  0) ),
+# ]
+
+
 labels = [
           # name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
     Label(  'person'               , 1 ,       11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
     Label(  'rider'                , 2 ,       12 , 'human'           , 6       , True         , False        , (255,  0,  0) ),
+    Label(  'pole'                 , 3 ,         5 , 'object'          , 3       , False        , False        , (153,153,153) ),
+    Label(  'traffic light'        , 4 ,         6 , 'object'          , 3       , False        , False        , (250,170, 30) ),
+    Label(  'traffic sign'         , 5 ,         7 , 'object'          , 3       , False        , False        , (220,220,  0) ),
 ]
+
 
 # labels = [
 #     #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
@@ -141,7 +152,8 @@ labels = [
 # cityscape_class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle', \
     # 'licensy plate', 'wall', 'fence', 'guard rail', 'bridge', 'tunnel', 'pole', 'polegroup', 'traffic light', 'traffic sign']
 # cityscape_class_names = ['person', 'rider', 'car']
-cityscape_class_names = ['person', 'rider']
+# cityscape_class_names = ['person', 'rider']
+cityscape_class_names = ['person', 'rider', 'pole', 'traffic light', 'traffic sign']
 # cityscape_class_names = ['person']
 # cityscape_class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle', 'pole', 'traffic light', 'traffic sign']
 

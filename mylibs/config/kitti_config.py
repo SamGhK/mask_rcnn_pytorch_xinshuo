@@ -138,6 +138,30 @@ labels = [
 #     # Label(  'fence'                , 13 ,         4 , 'construction'    , 2       , False        , False        , (190,153,153) ),
 # ]
 
+# labels = [
+#     #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
+#     Label(  'person'               , 1 ,       11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
+#     # Label(  'rider'                , 2 ,       12 , 'human'           , 6       , True         , False        , (255,  0,  0) ),
+#     # Label(  'car'                  , 3 ,       13 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
+# ]
+
+
+# labels = [
+#     #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
+#     Label(  'person'               , 1 ,       11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
+#     Label(  'rider'                , 2 ,       12 , 'human'           , 6       , True         , False        , (255,  0,  0) ),
+#     # Label(  'car'                  , 3 ,       13 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
+# ]
+
+
+# labels = [
+#           # name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
+#     Label(  'person'               , 1 ,       11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
+#     Label(  'rider'                , 2 ,       12 , 'human'           , 6       , True         , False        , (255,  0,  0) ),
+#     Label(  'pole'                 , 3 ,         5 , 'object'          , 3       , False        , False        , (153,153,153) ),
+#     Label(  'traffic light'        , 4 ,         6 , 'object'          , 3       , False        , False        , (250,170, 30) ),
+#     Label(  'traffic sign'         , 5 ,         7 , 'object'          , 3       , False        , False        , (220,220,  0) ),
+# ]
 #--------------------------------------------------------------------------------
 # Create dictionaries for a fast lookup
 #--------------------------------------------------------------------------------
@@ -150,12 +174,26 @@ labels = [
 # kitti_class_names = ['building', 'wall', 'fence', 'guard rail', 'bridge', 'tunnel', 'pole', 'polegroup', 'traffic light', 'traffic sign', 'person',
 #     'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle', ' license plate']
 # kitti_class_names = ['person', 'rider', 'car']
+# kitti_class_names = ['person', 'rider']
+# kitti_class_names = ['person']
+# kitti_class_names = ['person', 'rider', 'pole', 'traffic light', 'traffic sign']
 kitti_class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle']
 # kitti_class_names = ['person', 'rider', 'car', 'truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle', 'pole', 'traffic light', 'traffic sign']
 
 kitti_name2label = {label.name: label for label in labels}            # name to label object
 kitti_id2label   = {label.id  : label for label in labels}            # id to label object
 
+
+
+# def class_mapping_kitti_to_mykitti_training(class_id):
+#     if class_id == 24: return 1             # person 
+#     else: return 0
+
+
+# def class_mapping_kitti_to_mykitti_training(class_id):
+#     if class_id == 24: return 1             # person 
+#     elif class_id == 25: return 2
+#     else: return 0
 
 # def class_mapping_kitti_to_mykitti_training(class_id):
 #     if class_id == 24: return 1             # person 
@@ -177,6 +215,13 @@ def class_mapping_kitti_to_mykitti_training(class_id):
     elif class_id == 33: return 10
     else: return 0
 
+# def class_mapping_kitti_to_mykitti_training(class_id):
+#     if class_id == 24: return 1             # person 
+#     elif class_id == 25: return 2
+#     elif class_id == 17: return 3
+#     elif class_id == 19: return 4
+#     elif class_id == 20: return 5
+#     else: return 0
 
 # def class_mapping_kitti_to_mykitti_training(class_id):
 #     if class_id == 24: return 1             # person 

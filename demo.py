@@ -38,13 +38,18 @@ config = InferenceConfig()
 # save_dir = os.path.join(data_dir, 'results/mask_preprocessed_cityscape'); mkdir_if_missing(save_dir)
 
 # Shimizu
-folder_name = 'Q_C0006_330-360sec'
+# folder_name = 'Q_C0006_330-360sec'
 # folder_name = 'Q_C0006_480-510sec'
 data_dir = '/media/xinshuo/Data/Datasets/shimizu'
-images_dir = os.path.join(data_dir, 'images', folder_name)
-save_dir = os.path.join(data_dir, 'results', folder_name); mkdir_if_missing(save_dir)
+# data_dir = '/media/xinshuo/Data/Datasets/Cityscapes/leftImg8bit/demoVideo'
+# images_dir = os.path.join(data_dir, 'subimages_500')
+# images_dir = os.path.join(data_dir, 'stuttgart_00')
+images_dir = os.path.join(data_dir, 'public_asset')
+# save_dir = os.path.join(data_dir, 'results', 'MASK_RCNN'); mkdir_if_missing(save_dir)
+save_dir = os.path.join(data_dir, 'results', 'public_asset'); mkdir_if_missing(save_dir)
 
-vis_dir = os.path.join(save_dir, 'visualization'); mkdir_if_missing(vis_dir)
+# vis_dir = os.path.join(data_dir, 'visualization', 'MASK_RCNN'); mkdir_if_missing(vis_dir)
+vis_dir = os.path.join(data_dir, 'visualization', 'public_asset'); mkdir_if_missing(vis_dir)
 mask_dir = os.path.join(save_dir, 'masks'); mkdir_if_missing(mask_dir)
 detection_result_filepath = os.path.join(save_dir, 'mask_results.txt'); detection_results_file = open(detection_result_filepath, 'w')
 log_file = os.path.join(save_dir, 'log.txt'); log_file = open(log_file, 'w')
@@ -59,12 +64,16 @@ if config.GPU_COUNT: model = model.cuda()
 model.load_weights(model_path)    # Load weights 
 
 ##--------------------------------- Testing ----------------------------------##
-image_list, num_list = load_list_from_folder(images_dir)
+image_list, num_list = load_list_from_folder(images_dir, ext_filter=['.png', '.jpg'])
 print_log('testing results on %d images' % num_list, log=log_file) 
 count = 1
 timer = Timer(); timer.tic()
 for image_file_tmp in image_list:
-	_, filename, _ = fileparts(image_file_tmp)
+	parent_dir, filename, _ = fileparts(image_file_tmp)
+	# video_dir = parent_dir.split('/')[-1]
+	# print(video_dir)
+	# zxc
+
 	image = load_image(image_file_tmp)
 	results = model.detect([image])		# inference, results is a dictionary
 	if len(results) == 0: 
@@ -91,9 +100,14 @@ for image_file_tmp in image_list:
 	print(print_str)
 	print_log('%s, saving to %s' % (print_str, filename), log=log_file, display=False)
 
+	bbox_savedir = os.path.join(save_dir, 'bboxes'); mkdir_if_missing(bbox_savedir)
+	bbox_savepath = os.path.join(bbox_savedir, filename+'.txt'); bbox_savefile = open(bbox_savepath, 'w')
+
 	# save data for each individual instances
 	for instance_index in range(num_instances):
 		class_tmp = r['class_ids'][instance_index]
+		if class_tmp != 1: continue						# only detect the pedestrians
+
 		bbox_tmp = bboxes_tmp[instance_index, :]		# TLBR format
 		score_tmp = r['scores'][instance_index]
 
@@ -106,6 +120,12 @@ for image_file_tmp in image_list:
 		# save info for every instances
 		save_str = '%s %s %.2f %.2f %.2f %.2f %.2f %s \n' % (image_file_tmp, class_names_bg[class_tmp], bbox_tmp[0], bbox_tmp[1], bbox_tmp[2], bbox_tmp[3], score_tmp, save_path_tmp)
 		detection_results_file.write(save_str)
+
+		save_str = 'Pedestrian -1 -1 -10 %.3f %.3f %.3f %.3f 0 0 0 0 0 0 0 %.8f\n' % (bbox_tmp[0], bbox_tmp[1], bbox_tmp[2], bbox_tmp[3], score_tmp)
+		bbox_savefile.write(save_str)
+	
+	# zxc
 	count += 1
+	bbox_savefile.close()
 
 detection_results_file.close()
