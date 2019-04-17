@@ -9,15 +9,20 @@ from xinshuo_visualization.python.private import save_vis_close_helper
 from xinshuo_miscellaneous import convert_secs2time, Timer, get_timestring, print_log
 
 train_dataset = 'kitti'
+class_to_plot = [1, 2, 3]
+# class_to_plot = [1]
 # train_dataset = 'cityscape'
 # epoch_list_to_evaluate = [160, 140, 120, 100, 80, 60, 40, 20]
 # epoch_list_to_evaluate = [10, 20, 30, 40, 50, 60, 70]
-epoch_list_to_evaluate = [5, 10, 15, 20, 25, 30, 35, 40]
+# epoch_list_to_evaluate = [5, 10, 15, 20, 25, 30, 35, 40]
+epoch_list_to_evaluate = [20]
 # epoch_list_to_evaluate = [80, 90]
 # epoch_list_to_evaluate = [40, 45, 50, 55, 60, 65, 70, 75, 80]
 # epoch_list_to_evaluate = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160]
 model_folder = 'kitti20181113T0009_10class_finetuned'
-split = 'val' 		# train, val, trainval, test
+# model_folder = 'mask_results_kitti_final_model'
+# split = 'trainval' 		# train, val, trainval, test
+split = 'test' 		# train, val, trainval, test
 object_interest = {1: 'Pedestrian', 2: 'Car', 3: 'Cyclist'}
 kitti_dir = '/media/xinshuo/Data/Datasets/KITTI'
 if split == 'test': data_dir = os.path.join(kitti_dir, 'object/testing')
@@ -42,6 +47,7 @@ class InferenceConfig(Config):
 	elif train_dataset == 'kitti': NUM_CLASSES = 1 + len(kitti_class_names)
 	else: assert False, 'error'
 config = InferenceConfig()
+# config.DETECTION_MIN_CONFIDENCE = 0.7
 config.DETECTION_MIN_CONFIDENCE = 0
 
 for epoch in epoch_list_to_evaluate:
@@ -100,7 +106,7 @@ for epoch in epoch_list_to_evaluate:
 		bboxes_tmp[:, [2, 3]] = bboxes_tmp[:, [3, 2]]			# TLBR format
 
 		# visualization
-		fig, _ = visualize_image_with_bbox_mask(image, boxes=bboxes_tmp, masks=r['masks'], class_ids=r['class_ids'], class_names=class_names_bg, scores=r['scores'])
+		fig, _ = visualize_image_with_bbox_mask(image, boxes=bboxes_tmp, masks=r['masks'], class_ids=r['class_ids'], class_names=class_names_bg, scores=r['scores'], class_to_plot=class_to_plot)
 		save_path_tmp = os.path.join(vis_dir, filename+'.jpg')
 		save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)
 		
