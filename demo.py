@@ -42,11 +42,11 @@ config = InferenceConfig()
 # folder_name = 'Q_C0006_480-510sec'
 data_dir = '/media/xinshuo/Data/Datasets/shimizu'
 # data_dir = '/media/xinshuo/Data/Datasets/Cityscapes/leftImg8bit/demoVideo'
-# images_dir = os.path.join(data_dir, 'subimages_500')
+images_dir = os.path.join(data_dir, 'images_every10')
 # images_dir = os.path.join(data_dir, 'stuttgart_00')
-images_dir = os.path.join(data_dir, 'public_asset')
-# save_dir = os.path.join(data_dir, 'results', 'MASK_RCNN'); mkdir_if_missing(save_dir)
-save_dir = os.path.join(data_dir, 'results', 'public_asset'); mkdir_if_missing(save_dir)
+# images_dir = os.path.join(data_dir, 'public_asset')
+save_dir = os.path.join(data_dir, 'results', 'MASK_RCNN'); mkdir_if_missing(save_dir)
+# save_dir = os.path.join(data_dir, 'results', 'public_asset'); mkdir_if_missing(save_dir)
 
 # vis_dir = os.path.join(data_dir, 'visualization', 'MASK_RCNN'); mkdir_if_missing(vis_dir)
 # vis_dir = os.path.join(data_dir, 'visualization', 'public_asset'); mkdir_if_missing(vis_dir)
@@ -65,13 +65,13 @@ if config.GPU_COUNT: model = model.cuda()
 model.load_weights(model_path)    # Load weights 
 
 ##--------------------------------- Testing ----------------------------------##
-image_list, num_list = load_list_from_folder(images_dir, ext_filter=['.png', '.jpg'])
+image_list, num_list = load_list_from_folder(images_dir, ext_filter=['.png', '.jpg'], depth=2)
 print_log('testing results on %d images' % num_list, log=log_file) 
 count = 1
 timer = Timer(); timer.tic()
 for image_file_tmp in image_list:
 	parent_dir, filename, _ = fileparts(image_file_tmp)
-	# video_dir = parent_dir.split('/')[-1]
+	video_dir = parent_dir.split('/')[-1]
 	# print(video_dir)
 	# zxc
 
@@ -90,7 +90,8 @@ for image_file_tmp in image_list:
 	bboxes_tmp[:, [2, 3]] = bboxes_tmp[:, [3, 2]]			# x1, y1, x2, y2 format	
 
 	fig, _ = visualize_image_with_bbox_mask(image, boxes=bboxes_tmp, masks=r['masks'], class_ids=r['class_ids'], class_names=class_names_bg, scores=r['scores'], class_to_plot=[1])
-	save_path_tmp = os.path.join(vis_dir, filename+'.jpg')
+	# save_path_tmp = os.path.join(vis_dir, filename+'.jpg')
+	save_path_tmp = os.path.join(vis_dir, video_dir, filename+'.jpg')
 	# visualize_image(image, save_path=save_path_tmp)
 	save_vis_close_helper(fig=fig, transparent=False, save_path=save_path_tmp)
 
@@ -102,7 +103,8 @@ for image_file_tmp in image_list:
 	print_log('%s, saving to %s' % (print_str, filename), log=log_file, display=False)
 
 	bbox_savedir = os.path.join(save_dir, 'bboxes'); mkdir_if_missing(bbox_savedir)
-	bbox_savepath = os.path.join(bbox_savedir, filename+'.txt'); bbox_savefile = open(bbox_savepath, 'w')
+	# bbox_savepath = os.path.join(bbox_savedir, filename+'.txt'); bbox_savefile = open(bbox_savepath, 'w')
+	bbox_savepath = os.path.join(bbox_savedir, video_dir, filename+'.txt'); mkdir_if_missing(bbox_savepath); bbox_savefile = open(bbox_savepath, 'w')
 
 	# save data for each individual instances
 	for instance_index in range(num_instances):
@@ -114,7 +116,8 @@ for image_file_tmp in image_list:
 
 		mask_tmp = r['masks'][:, :, instance_index]
 		mask_tmp *= 255
-		mask_dir_frame = os.path.join(mask_dir, filename); mkdir_if_missing(mask_dir_frame)
+		# mask_dir_frame = os.path.join(mask_dir, filename); mkdir_if_missing(mask_dir_frame)
+		mask_dir_frame = os.path.join(mask_dir, video_dir, filename); mkdir_if_missing(mask_dir_frame)
 		save_path_tmp = os.path.join(mask_dir_frame, 'instance_%04d'%instance_index+'.jpg')		
 		save_image(mask_tmp, save_path=save_path_tmp)
 		

@@ -4,7 +4,7 @@
 # CityScape dataset loader
 
 import os, time, numpy as np, copy, cv2
-from mask_rcnn_pytorch.mylibs import General_Dataset, Config, kitti_class_names, kitti_id2label, class_mapping_kitti_to_mykitti_training
+from mylibs import General_Dataset, Config, kitti_class_names, kitti_id2label, class_mapping_kitti_to_mykitti_training
 from xinshuo_io import mkdir_if_missing, fileparts, load_list_from_folder, load_image
 from xinshuo_math import bboxes_from_mask
 from xinshuo_images import rgb2gray

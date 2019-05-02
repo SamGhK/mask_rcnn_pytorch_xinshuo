@@ -4,7 +4,7 @@
 # CityScape dataset loader
 
 import os, time, numpy as np, copy
-from mask_rcnn_pytorch.mylibs import General_Dataset, cityscape_id2label, cityscape_name2label, cityscape_class_names, Config, CityScapeAnnotation
+from mylibs import General_Dataset, cityscape_id2label, cityscape_name2label, cityscape_class_names, Config, CityScapeAnnotation
 from xinshuo_io import mkdir_if_missing, fileparts, load_list_from_folder
 from xinshuo_math import bboxes_from_mask
 from xinshuo_miscellaneous import is_path_exists, islist, find_unique_common_from_lists
